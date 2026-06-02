@@ -75,6 +75,14 @@ class WorkspaceContainer {
 
     this.embeddingProviderRegistry = new EmbeddingProviderRegistryService({ config });
 
+    // FIX: Instantiate stateMachine and executor BEFORE embeddingService so they
+    // are not undefined when injected as constructor dependencies.
+    this.workspaceIngestionStateMachine = new WorkspaceIngestionStateMachine({
+      workspaceSourceRepository: this.workspaceSourceRepository
+    });
+
+    this.safePipelineExecutorService = new SafePipelineExecutorService();
+
     this.embeddingService = new EmbeddingService({
       embeddingProviderRegistry: this.embeddingProviderRegistry,
       qdrantClient: getQdrantClient(),
@@ -138,13 +146,9 @@ class WorkspaceContainer {
     this.workspaceVideoUploadService = new WorkspaceVideoUploadService({ workspaceStorageService: this.workspaceStorageService });
     this.workspaceUploadTelemetryService = new WorkspaceUploadTelemetryService({ ingestionTracerService: this.ingestionTracerService });
 
-    // Hardened state machine and execution layers
-    this.workspaceIngestionStateMachine = new WorkspaceIngestionStateMachine({
-      workspaceSourceRepository: this.workspaceSourceRepository
-    });
-
-    this.safePipelineExecutorService = new SafePipelineExecutorService();
-
+    // NOTE: workspaceIngestionStateMachine and safePipelineExecutorService are
+    // already instantiated above (before embeddingService). Only cleanup manager
+    // needs to be wired here.
     this.workspaceCleanupManager = new WorkspaceCleanupManager({
       embeddingService: this.embeddingService,
       workspaceStorageService: this.workspaceStorageService,

@@ -21,7 +21,7 @@ export default function CreateWorkspaceModal({ isOpen, onClose, onCreate, isPend
       <div className="w-full max-w-md bg-[#0e0f14] border border-white/5 rounded-2xl p-6 shadow-2xl shadow-black/80 animate-in fade-in zoom-in-95 duration-150 select-none">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
-            <AppIcon name="brain" className="text-indigo-400" size={20} />
+            <AppIcon name="brain" className="text-orange-400" size={20} />
             <h3 className="text-sm font-semibold text-slate-200">Create Knowledge Workspace</h3>
           </div>
           <button onClick={onClose} className="text-slate-500 hover:text-slate-350 transition">
@@ -39,7 +39,7 @@ export default function CreateWorkspaceModal({ isOpen, onClose, onCreate, isPend
                   type="button"
                   onClick={() => setEmoji(em)}
                   className={`aspect-square text-lg rounded-lg flex items-center justify-center hover:bg-white/[0.04] transition ${
-                    emoji === em ? 'bg-indigo-950/20 border-indigo-500/25 text-indigo-400 shadow-sm' : 'border border-transparent text-slate-400'
+                    emoji === em ? 'bg-orange-950/20 border-orange-500/25 text-orange-400 shadow-sm' : 'border border-transparent text-slate-400'
                   }`}
                 >
                   {em}
@@ -57,7 +57,7 @@ export default function CreateWorkspaceModal({ isOpen, onClose, onCreate, isPend
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Machine Learning Deep Dive, Web Design Notes"
-              className="w-full bg-white/[0.02] border border-white/5 rounded-xl px-4 py-3 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500/30 focus:bg-white/[0.03] transition"
+              className="w-full bg-white/[0.02] border border-white/5 rounded-xl px-4 py-3 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-orange-500/30 focus:bg-white/[0.03] transition"
             />
           </div>
 
@@ -73,7 +73,7 @@ export default function CreateWorkspaceModal({ isOpen, onClose, onCreate, isPend
             <button
               type="submit"
               disabled={isPending || !name.trim()}
-              className="px-4 py-2 text-xs font-bold text-white bg-indigo-650 hover:bg-indigo-600 disabled:bg-white/[0.01] disabled:text-slate-500 rounded-xl flex items-center gap-1.5 shadow-md shadow-indigo-950/50 transition"
+              className="px-4 py-2 text-xs font-bold text-white bg-orange-650 hover:bg-orange-600 disabled:bg-white/[0.01] disabled:text-slate-500 rounded-xl flex items-center gap-1.5 shadow-md shadow-orange-950/50 transition"
             >
               {isPending ? (
                 <>
@@ -93,3 +93,4 @@ export default function CreateWorkspaceModal({ isOpen, onClose, onCreate, isPend
     </div>
   );
 }
+

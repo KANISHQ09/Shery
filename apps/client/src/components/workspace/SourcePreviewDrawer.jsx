@@ -16,6 +16,7 @@ export default function SourcePreviewDrawer({
   const [startTimeSeconds, setStartTimeSeconds] = useState(0);
 
   const highlightRef = useRef(null);
+  const scrollRef = useRef(null);
 
   const fetchSource = () => {
     if (!citation?.sourceId) return;
@@ -49,9 +50,14 @@ export default function SourcePreviewDrawer({
 
   // Scroll to highlight element
   useEffect(() => {
-    if (sourceData && highlightRef.current) {
+    if (sourceData && highlightRef.current && scrollRef.current) {
       setTimeout(() => {
-        highlightRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const container = scrollRef.current;
+        const target = highlightRef.current;
+        container.scrollTo({
+          top: target.offsetTop - container.clientHeight / 2 + target.clientHeight / 2,
+          behavior: 'smooth'
+        });
       }, 300);
     }
   }, [sourceData]);
@@ -139,7 +145,7 @@ export default function SourcePreviewDrawer({
       {/* Drawer Header */}
       <div className="p-4 border-b border-white/5 flex items-center justify-between bg-black/10">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-7 h-7 rounded-lg bg-[#white]/[0.02] border border-white/5 text-indigo-400 flex items-center justify-center shrink-0">
+          <div className="w-7 h-7 rounded-lg bg-[#white]/[0.02] border border-white/5 text-orange-400 flex items-center justify-center shrink-0">
             <AppIcon name={sourceData?.type === 'youtube' ? 'video' : sourceData?.type === 'pdf' ? 'file' : 'alignLeft'} size={12} />
           </div>
           <div className="min-w-0">
@@ -161,7 +167,7 @@ export default function SourcePreviewDrawer({
       <div className="flex-1 overflow-y-auto p-5 space-y-5 scrollbar-thin">
         {loading ? (
           <div className="h-full flex flex-col items-center justify-center text-slate-555 text-slate-500 gap-2 py-20">
-            <AppIcon name="loader" size={20} className="animate-spin text-indigo-400" />
+            <AppIcon name="loader" size={20} className="animate-spin text-orange-400" />
             <span className="text-[10px] font-bold uppercase tracking-wider">Retrieving Source...</span>
           </div>
         ) : sourceData ? (
@@ -195,9 +201,9 @@ export default function SourcePreviewDrawer({
             <>
               {/* Partially Ready / Degraded Banner */}
               {['partially_ready', 'transcript_ready', 'ready_without_vectors', 'indexing_pending', 'indexing_retrying'].includes(sourceData.status) && (
-                <div className="bg-indigo-950/10 border border-dashed border-indigo-500/20 rounded-2xl p-4 space-y-2">
-                  <div className="flex items-center gap-2 text-[10px] font-bold text-indigo-400 uppercase tracking-wider">
-                    <span className={`w-1.5 h-1.5 rounded-full ${sourceData.status === 'ready_without_vectors' ? 'bg-rose-500' : 'bg-indigo-500'} animate-ping`} />
+                <div className="bg-orange-950/10 border border-dashed border-orange-500/20 rounded-2xl p-4 space-y-2">
+                  <div className="flex items-center gap-2 text-[10px] font-bold text-orange-400 uppercase tracking-wider">
+                    <span className={`w-1.5 h-1.5 rounded-full ${sourceData.status === 'ready_without_vectors' ? 'bg-rose-500' : 'bg-orange-500'} animate-ping`} />
                     <span>
                       {sourceData.status === 'ready_without_vectors' 
                         ? 'Grounded Chat Active (Degraded)' 
@@ -218,7 +224,7 @@ export default function SourcePreviewDrawer({
                       : 'The source text is fully available for chat. High-performance semantic indexing is computing in the background.'}
                   </p>
                   <div className="w-full bg-white/[0.04] h-1 rounded-full overflow-hidden">
-                    <div className="h-full bg-indigo-500 transition-all duration-300" style={{ width: `${sourceData.progress || 70}%` }} />
+                    <div className="h-full bg-orange-500 transition-all duration-300" style={{ width: `${sourceData.progress || 70}%` }} />
                   </div>
                 </div>
               )}
@@ -259,8 +265,8 @@ export default function SourcePreviewDrawer({
 
               {/* Highlighted context / Topic Segment details */}
               {citation && (
-                <div className="bg-indigo-950/20 border border-indigo-500/25 rounded-xl p-3.5 text-xs text-indigo-200">
-                  <div className="flex items-center gap-1.5 text-indigo-400 font-bold text-[10px] uppercase tracking-wider mb-1">
+                <div className="bg-orange-950/20 border border-orange-500/25 rounded-xl p-3.5 text-xs text-orange-200">
+                  <div className="flex items-center gap-1.5 text-orange-400 font-bold text-[10px] uppercase tracking-wider mb-1">
                     <AppIcon name="sparkles" size={10} />
                     <span>Grounding Reference</span>
                   </div>
@@ -273,7 +279,7 @@ export default function SourcePreviewDrawer({
               {/* Scrollable Transcript Text */}
               <div className="space-y-4">
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Full Indexed Content</span>
-                <div className="bg-white/[0.01] border border-white/5 rounded-xl p-4 max-h-[300px] overflow-y-auto text-xs leading-relaxed text-slate-300 font-normal space-y-3 scrollbar-thin select-text">
+                <div ref={scrollRef} className="bg-white/[0.01] border border-white/5 rounded-xl p-4 max-h-[300px] overflow-y-auto text-xs leading-relaxed text-slate-300 font-normal space-y-3 scrollbar-thin select-text">
                   {sourceData.topicSegments && sourceData.topicSegments.length > 0 ? (
                     sourceData.topicSegments.map((seg, idx) => {
                       const highlight = isHighlighted(seg.title);
@@ -283,7 +289,7 @@ export default function SourcePreviewDrawer({
                           ref={highlight ? highlightRef : null}
                           className={`p-3 rounded-xl border transition ${
                             highlight
-                              ? 'bg-indigo-950/20 border border-indigo-500/25 text-indigo-200 shadow-sm shadow-indigo-950/10'
+                              ? 'bg-orange-950/20 border border-orange-500/25 text-orange-200 shadow-sm shadow-orange-950/10'
                               : 'bg-white/[0.015] border border-white/5 hover:bg-white/[0.03]'
                           }`}
                         >
@@ -292,7 +298,7 @@ export default function SourcePreviewDrawer({
                             {sourceData.type === 'youtube' && (
                               <button
                                 onClick={() => handleJumpToTime(seg.startTimeLabel || '0:00')}
-                                className="text-[9px] font-bold text-indigo-400 bg-indigo-950/20 border border-indigo-500/25 px-2 py-0.5 rounded-full hover:bg-indigo-950/40 transition"
+                                className="text-[9px] font-bold text-orange-400 bg-orange-950/20 border border-orange-500/25 px-2 py-0.5 rounded-full hover:bg-orange-950/40 transition"
                               >
                                 Jump
                               </button>
@@ -316,3 +322,4 @@ export default function SourcePreviewDrawer({
     </div>
   );
 }
+

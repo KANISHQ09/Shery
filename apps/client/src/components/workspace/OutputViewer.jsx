@@ -115,7 +115,7 @@ export default function OutputViewer({ isOpen, onClose, output }) {
       {/* Scroll indicator bar */}
       <div className="absolute top-0 left-0 right-0 h-1 bg-white/[0.03] z-50">
         <div
-          className="h-full bg-indigo-500 transition-all duration-100 shadow-[0_0_8px_rgba(99,102,241,0.5)]"
+          className="h-full bg-orange-500 transition-all duration-100 shadow-[0_0_8px_rgba(99,102,241,0.5)]"
           style={{ width: `${scrollPercent}%` }}
         />
       </div>
@@ -127,12 +127,12 @@ export default function OutputViewer({ isOpen, onClose, output }) {
         {!focusMode && (
           <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 shrink-0 bg-black/10">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+              <div className="w-8 h-8 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400">
                 <AppIcon name={output.type === 'study_guide' ? 'book' : 'sparkles'} size={14} />
               </div>
               <div>
                 <h3 className="text-xs font-extrabold text-white leading-none tracking-tight">{output.title}</h3>
-                <span className="text-[8px] text-indigo-455 font-bold uppercase tracking-widest block mt-1.5">
+                <span className="text-[8px] text-orange-455 font-bold uppercase tracking-widest block mt-1.5">
                   Studio Asset • {output.type.replace('_', ' ')}
                 </span>
               </div>
@@ -162,7 +162,7 @@ export default function OutputViewer({ isOpen, onClose, output }) {
               {output.type !== 'flashcards' && (
                 <button
                   onClick={handleDownloadPDF}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[9.5px] font-bold text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 rounded-xl transition"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[9.5px] font-bold text-orange-400 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/20 rounded-xl transition"
                 >
                   <AppIcon name="upload" size={10} />
                   <span>PDF</span>
@@ -206,7 +206,7 @@ export default function OutputViewer({ isOpen, onClose, output }) {
                   <button
                     key={hIdx}
                     onClick={() => scrollToSection(hIdx)}
-                    className="w-full text-left px-2.5 py-1.5 rounded-lg text-[10.5px] font-medium text-slate-400 hover:text-indigo-400 hover:bg-white/[0.015] truncate block transition"
+                    className="w-full text-left px-2.5 py-1.5 rounded-lg text-[10.5px] font-medium text-slate-400 hover:text-orange-400 hover:bg-white/[0.015] truncate block transition"
                     title={heading.text}
                   >
                     {heading.text}
@@ -225,7 +225,7 @@ export default function OutputViewer({ isOpen, onClose, output }) {
               {/* Focus mode title highlight */}
               {focusMode && (
                 <div className="pb-6 border-b border-white/5 mb-8 select-none">
-                  <span className="text-[8px] text-indigo-455 font-extrabold uppercase tracking-widest mb-1.5 block">Textbook Mode</span>
+                  <span className="text-[8px] text-orange-455 font-extrabold uppercase tracking-widest mb-1.5 block">Textbook Mode</span>
                   <h1 className="text-xl font-extrabold text-white leading-tight">{output.title}</h1>
                 </div>
               )}
@@ -263,3 +263,4 @@ export default function OutputViewer({ isOpen, onClose, output }) {
     </div>
   );
 }
+

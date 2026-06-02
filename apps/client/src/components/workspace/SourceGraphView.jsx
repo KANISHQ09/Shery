@@ -151,7 +151,7 @@ export default function SourceGraphView({ graph }) {
              ref={svgRef}>
           
           {/* Ambient central background star glow */}
-          <div className="absolute w-[300px] h-[300px] rounded-full bg-indigo-500/[0.02] blur-[100px] pointer-events-none select-none" />
+          <div className="absolute w-[300px] h-[300px] rounded-full bg-orange-500/[0.02] blur-[100px] pointer-events-none select-none" />
 
           {nodes.length > 0 ? (
             <svg 
@@ -270,7 +270,7 @@ export default function SourceGraphView({ graph }) {
             <div className="space-y-6">
               {/* Concept Meta Header */}
               <div className="border-b border-white/5 pb-4 space-y-1.5 animate-in fade-in duration-200">
-                <span className="text-[9px] font-extrabold text-indigo-400 bg-indigo-950/20 border border-indigo-500/25 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                <span className="text-[9px] font-extrabold text-orange-400 bg-orange-950/20 border border-orange-500/25 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
                   Concept cluster node
                 </span>
                 <h3 className="text-sm font-extrabold text-slate-200 leading-tight uppercase tracking-tight">
@@ -318,7 +318,7 @@ export default function SourceGraphView({ graph }) {
                             <AppIcon name="file" size={10} className="text-slate-400 shrink-0" />
                             <span className="text-slate-300 font-bold truncate block">{title}</span>
                           </div>
-                          <span className="text-[8px] text-indigo-400 bg-indigo-950/20 border border-indigo-500/25 px-2 py-0.5 rounded-md uppercase font-extrabold shrink-0">
+                          <span className="text-[8px] text-orange-400 bg-orange-950/20 border border-orange-500/25 px-2 py-0.5 rounded-md uppercase font-extrabold shrink-0">
                             Active
                           </span>
                         </div>
@@ -346,3 +346,4 @@ export default function SourceGraphView({ graph }) {
     </div>
   );
 }
+

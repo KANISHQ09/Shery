@@ -68,10 +68,18 @@ export default function WorkspaceVideoPreview({
   // Scroll sync active segment in transcript
   useEffect(() => {
     if (activeSentenceRef.current && scrollContainerRef.current) {
-      activeSentenceRef.current.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest',
-      });
+      const container = scrollContainerRef.current;
+      const target = activeSentenceRef.current;
+      const targetTop = target.offsetTop;
+      const targetBottom = targetTop + target.offsetHeight;
+      const containerScrollTop = container.scrollTop;
+      const containerHeight = container.clientHeight;
+
+      if (targetTop < containerScrollTop) {
+        container.scrollTo({ top: targetTop - 8, behavior: 'smooth' });
+      } else if (targetBottom > containerScrollTop + containerHeight) {
+        container.scrollTo({ top: targetBottom - containerHeight + 8, behavior: 'smooth' });
+      }
     }
   }, [activeSegmentIndex]);
 

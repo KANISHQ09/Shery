@@ -103,9 +103,9 @@ export default function WorkspaceVideoUploadCard({ workspaceId, onSourceAdded, o
           onClick={() => fileInputRef.current?.click()}
           className={`border border-dashed rounded-2xl p-8 text-center transition cursor-pointer relative select-none ${
             dragActive 
-              ? 'border-indigo-500 bg-indigo-950/10 scale-[1.01]' 
+              ? 'border-orange-500 bg-orange-950/10 scale-[1.01]' 
               : selectedFile 
-                ? 'border-indigo-500/30 bg-white/[0.02] hover:bg-white/[0.03]' 
+                ? 'border-orange-500/30 bg-white/[0.02] hover:bg-white/[0.03]' 
                 : 'border-white/5 bg-white/[0.005] hover:bg-white/[0.015]'
           }`}
         >
@@ -118,7 +118,7 @@ export default function WorkspaceVideoUploadCard({ workspaceId, onSourceAdded, o
           />
 
           <div className="flex flex-col items-center justify-center space-y-3">
-            <div className={`p-3 rounded-full bg-white/[0.02] border border-white/5 ${dragActive ? 'text-indigo-400 border-indigo-500/30 animate-pulse' : 'text-slate-500'}`}>
+            <div className={`p-3 rounded-full bg-white/[0.02] border border-white/5 ${dragActive ? 'text-orange-400 border-orange-500/30 animate-pulse' : 'text-slate-500'}`}>
               <AppIcon name="video" size={24} />
             </div>
 
@@ -156,7 +156,7 @@ export default function WorkspaceVideoUploadCard({ workspaceId, onSourceAdded, o
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Setting up RAG Database"
-              className="w-full bg-white/[0.02] border border-white/5 rounded-xl px-4 py-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500/30 focus:bg-white/[0.03] transition"
+              className="w-full bg-white/[0.02] border border-white/5 rounded-xl px-4 py-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-orange-500/30 focus:bg-white/[0.03] transition"
             />
           </div>
         )}
@@ -165,7 +165,7 @@ export default function WorkspaceVideoUploadCard({ workspaceId, onSourceAdded, o
           <button
             type="submit"
             disabled={isUploading || !selectedFile}
-            className="px-5 py-2.5 text-xs font-bold text-white bg-indigo-650 hover:bg-indigo-600 disabled:bg-white/[0.01] disabled:text-slate-500 rounded-xl flex items-center gap-1.5 shadow-md shadow-indigo-950/50 transition"
+            className="px-5 py-2.5 text-xs font-bold text-white bg-orange-650 hover:bg-orange-600 disabled:bg-white/[0.01] disabled:text-slate-500 rounded-xl flex items-center gap-1.5 shadow-md shadow-orange-950/50 transition"
           >
             {isUploading ? (
               <>
@@ -184,3 +184,4 @@ export default function WorkspaceVideoUploadCard({ workspaceId, onSourceAdded, o
     </div>
   );
 }
+

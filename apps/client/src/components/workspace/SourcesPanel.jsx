@@ -21,9 +21,9 @@ export default function SourcesPanel({
   }, [sources, search, filterType]);
 
   return (
-    <section 
+    <section
       style={{ width: '280px', minWidth: '280px', maxWidth: '280px' }}
-      className="hidden md:flex shrink-0 h-full flex flex-col border-r border-white/5 bg-[#0d0e12]/60 backdrop-blur-md select-none overflow-hidden"
+      className="hidden md:flex shrink-0 h-full flex flex-col border-r border-white/5 bg-[#0d0e12]/60 backdrop-blur-md select-none overflow-hidden min-h-0"
     >
       {/* Search & Filter Header */}
       <div className="p-4 border-b border-white/5 bg-black/10 space-y-3">
@@ -45,7 +45,7 @@ export default function SourcesPanel({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Filter sources..."
-            className="w-full bg-white/[0.01] border border-white/5 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500/40 focus:bg-white/[0.03] transition"
+            className="w-full bg-white/[0.01] border border-white/5 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-orange-500/40 focus:bg-white/[0.03] transition"
           />
           <AppIcon name="search" size={12} className="absolute left-3 top-2.5 text-slate-500" />
           {search && (
@@ -69,11 +69,10 @@ export default function SourcesPanel({
             <button
               key={tab.id}
               onClick={() => setFilterType(tab.id)}
-              className={`flex-1 py-1 rounded-md text-center transition ${
-                filterType === tab.id
-                  ? 'bg-white/[0.04] text-indigo-400 border border-white/5'
-                  : 'hover:text-slate-200'
-              }`}
+              className={`flex-1 py-1 rounded-md text-center transition ${filterType === tab.id
+                ? 'bg-white/[0.04] text-orange-400 border border-white/5'
+                : 'hover:text-slate-200'
+                }`}
             >
               {tab.label}
             </button>
@@ -82,7 +81,7 @@ export default function SourcesPanel({
       </div>
 
       {/* Sources list */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-2 scrollbar-thin">
+      <div className="flex-1 overflow-y-auto min-h-0 p-3 space-y-2 scrollbar-thin">
         {filteredSources.map((source) => (
           <SourceCard
             key={source.id}
@@ -99,7 +98,7 @@ export default function SourcesPanel({
             {sources.length === 0 && (
               <button
                 onClick={onAddSource}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/15 rounded-xl hover:bg-indigo-500/20 transition"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-orange-400 bg-orange-500/10 border border-orange-500/15 rounded-xl hover:bg-orange-500/20 transition"
               >
                 <AppIcon name="upload" size={12} />
                 <span>Add Documents</span>
@@ -111,3 +110,4 @@ export default function SourcesPanel({
     </section>
   );
 }
+

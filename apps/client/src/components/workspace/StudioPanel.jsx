@@ -15,11 +15,12 @@ export default function StudioPanel({
   const [activeCategory, setActiveCategory] = useState('all');
   const [simulatedProgress, setSimulatedProgress] = useState(0);
   const [stepIndex, setStepIndex] = useState(0);
+  const [isExpandedTools, setIsExpandedTools] = useState(false);
 
   const tools = [
     { id: 'study_guide', label: 'Study Guide', icon: 'book', color: 'text-emerald-450', category: 'textbook', desc: 'Comprehensive conceptual overview' },
     { id: 'flashcards', label: 'Flashcards', icon: 'sparkles', color: 'text-amber-450', category: 'active', desc: 'CSS 3D spaced-repetition card decks' },
-    { id: 'faq', label: 'Grounding FAQ', icon: 'message', color: 'text-indigo-400', category: 'textbook', desc: 'Common questions from documents' },
+    { id: 'faq', label: 'Grounding FAQ', icon: 'message', color: 'text-orange-400', category: 'textbook', desc: 'Common questions from documents' },
     { id: 'timeline', label: 'Concept Timeline', icon: 'clock', color: 'text-blue-450', category: 'visual', desc: 'Milestone progressions & histories' },
     { id: 'key_insights', label: 'Key Insights', icon: 'lightbulb', color: 'text-yellow-450', category: 'textbook', desc: 'Critical takeaways and principles' },
     { id: 'key_definitions', label: 'Glossary', icon: 'alignLeft', color: 'text-pink-450', category: 'textbook', desc: 'Indexed dictionary of key terms' },
@@ -84,13 +85,13 @@ export default function StudioPanel({
   };
 
   return (
-    <aside className="w-full flex flex-col h-full border-l border-white/5 bg-[#06070a]/80 backdrop-blur-xl select-none shrink-0 z-10">
+    <aside className="w-full flex flex-col h-full border-l border-white/5 bg-[#06070a]/80 backdrop-blur-xl select-none shrink-0 z-10 min-h-0">
       {/* Studio Header */}
       <div className="p-4 border-b border-white/5 bg-black/20 space-y-3.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
-              <AppIcon name="sparkles" className="text-indigo-400" size={10} />
+            <div className="w-5 h-5 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
+              <AppIcon name="sparkles" className="text-orange-400" size={10} />
             </div>
             <span className="text-[10px] font-extrabold text-slate-200 uppercase tracking-widest">Synthesis Lab</span>
           </div>
@@ -104,7 +105,7 @@ export default function StudioPanel({
             value={topicFocus}
             onChange={(e) => setTopicFocus(e.target.value)}
             placeholder="Focus topic (e.g. Chapter 4)..."
-            className="w-full bg-[#0a0a0f] border border-white/5 rounded-xl pl-3 pr-8 py-2 text-[11px] text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500/30 focus:ring-1 focus:ring-indigo-500/20 transition-all font-medium"
+            className="w-full bg-[#0a0a0f] border border-white/5 rounded-xl pl-3 pr-8 py-2 text-[11px] text-slate-200 placeholder-slate-500 focus:outline-none focus:border-orange-500/30 focus:ring-1 focus:ring-orange-500/20 transition-all font-medium"
           />
           {topicFocus ? (
             <button
@@ -129,7 +130,7 @@ export default function StudioPanel({
             onClick={() => setActiveCategory(cat.id)}
             className={`px-2.5 py-2 text-[10px] font-bold border-b-2 transition-all relative whitespace-nowrap ${
               activeCategory === cat.id
-                ? 'border-indigo-500 text-indigo-400'
+                ? 'border-orange-500 text-orange-400'
                 : 'border-transparent text-slate-500 hover:text-slate-300'
             }`}
           >
@@ -139,34 +140,67 @@ export default function StudioPanel({
       </div>
 
       {/* Output Grid and Generated lists */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin">
+      <div className="flex-1 overflow-y-auto min-h-0 p-4 space-y-6 scrollbar-thin">
         {/* Generative Cards Grid */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-[9px] font-extrabold text-slate-500 uppercase tracking-widest block">Generators</span>
-            <span className="text-[8px] font-mono text-slate-600">{filteredTools.length} loaded</span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            {filteredTools.map((tool) => (
-              <motion.button
-                key={tool.id}
-                onClick={() => handleCreate(tool.id)}
-                disabled={isGenerating}
-                whileHover={{ scale: 1.01, translateY: -1 }}
-                whileTap={{ scale: 0.99 }}
-                className="flex flex-col items-start p-2.5 rounded-xl bg-white/[0.015] border border-white/5 hover:border-indigo-500/20 hover:bg-indigo-500/[0.01] transition-premium text-left disabled:opacity-50 disabled:cursor-not-allowed group h-[82px] justify-between"
+          {/* Lightweight Quick Actions */}
+          {!isExpandedTools ? (
+            <div className="space-y-3">
+              <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest block">Quick Actions</span>
+              <div className="flex flex-col gap-1.5">
+                {filteredTools.slice(0, 3).map((tool) => (
+                  <button
+                    key={tool.id}
+                    onClick={() => handleCreate(tool.id)}
+                    disabled={isGenerating}
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/[0.03] text-left transition disabled:opacity-50 group cursor-pointer"
+                  >
+                    <AppIcon name={tool.icon} size={12} className={`${tool.color} opacity-80 group-hover:opacity-100 transition`} />
+                    <span className="text-[11px] font-semibold text-slate-300 group-hover:text-slate-100 transition">{tool.label}</span>
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => setIsExpandedTools(true)}
+                className="w-full mt-2 py-2 border border-white/5 bg-transparent hover:bg-white/[0.02] text-[10px] font-bold text-slate-400 hover:text-slate-200 rounded-lg transition flex items-center justify-center gap-2 cursor-pointer"
               >
-                <div className={`w-5 h-5 rounded-lg bg-white/[0.02] border border-white/5 flex items-center justify-center transition group-hover:bg-indigo-500/10 group-hover:border-indigo-500/20 group-hover:${tool.color}`}>
-                  <AppIcon name={tool.icon} size={10} className={`${tool.color} transition-transform duration-300 group-hover:scale-110`} />
-                </div>
-                <div>
-                  <span className="text-[10px] font-bold text-slate-200 block group-hover:text-indigo-400 transition truncate w-full">{tool.label}</span>
-                  <span className="text-[8px] text-slate-500 leading-tight block group-hover:text-slate-450 transition line-clamp-1 mt-0.5 font-medium">{tool.desc}</span>
-                </div>
-              </motion.button>
-            ))}
-          </div>
+                <span>Open Studio Mode</span>
+                <AppIcon name="chevronLeft" size={10} className="-rotate-90" />
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest block">Studio Generators</span>
+                <button
+                  onClick={() => setIsExpandedTools(false)}
+                  className="text-[9px] text-orange-400 hover:text-orange-300 font-bold uppercase tracking-wider"
+                >
+                  Close
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {filteredTools.map((tool) => (
+                  <motion.button
+                    key={tool.id}
+                    onClick={() => handleCreate(tool.id)}
+                    disabled={isGenerating}
+                    whileHover={{ scale: 1.01, translateY: -1 }}
+                    whileTap={{ scale: 0.99 }}
+                    className="flex flex-col items-start p-2.5 rounded-xl bg-white/[0.015] border border-white/5 hover:border-orange-500/20 hover:bg-orange-500/[0.01] transition-premium text-left disabled:opacity-50 disabled:cursor-not-allowed group h-[82px] justify-between"
+                  >
+                    <div className={`w-5 h-5 rounded-lg bg-white/[0.02] border border-white/5 flex items-center justify-center transition group-hover:bg-orange-500/10 group-hover:border-orange-500/20 group-hover:${tool.color}`}>
+                      <AppIcon name={tool.icon} size={10} className={`${tool.color} transition-transform duration-300 group-hover:scale-110`} />
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-200 block group-hover:text-orange-400 transition truncate w-full">{tool.label}</span>
+                      <span className="text-[8px] text-slate-500 leading-tight block group-hover:text-slate-450 transition line-clamp-1 mt-0.5 font-medium">{tool.desc}</span>
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Interactive Progressive Synthesis Timeline */}
@@ -176,14 +210,14 @@ export default function StudioPanel({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="bg-[#0b0c10]/60 border border-indigo-500/15 rounded-xl p-4 space-y-3.5 relative overflow-hidden"
+              className="bg-[#0b0c10]/60 border border-orange-500/15 rounded-xl p-4 space-y-3.5 relative overflow-hidden"
             >
               {/* Pulse background sphere */}
-              <div className="absolute top-0 right-0 w-24 h-24 rounded-full bg-indigo-500/5 blur-xl pointer-events-none" />
+              <div className="absolute top-0 right-0 w-24 h-24 rounded-full bg-orange-500/5 blur-xl pointer-events-none" />
 
               <div className="flex items-center justify-between relative z-10">
-                <span className="text-[9px] font-extrabold text-indigo-400 uppercase tracking-widest flex items-center gap-1.5">
-                  <AppIcon name="loader" size={9} className="animate-spin text-indigo-400" />
+                <span className="text-[9px] font-extrabold text-orange-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <AppIcon name="loader" size={9} className="animate-spin text-orange-400" />
                   <span>Cognitive Synthesis</span>
                 </span>
                 <span className="text-[10px] font-mono font-bold text-slate-300">{simulatedProgress}%</span>
@@ -192,7 +226,7 @@ export default function StudioPanel({
               {/* Progress Bar */}
               <div className="h-1 bg-white/[0.04] rounded-full overflow-hidden relative z-10">
                 <motion.div
-                  className="h-full bg-gradient-to-r from-indigo-500 to-purple-500"
+                  className="h-full bg-gradient-to-r from-orange-500 to-amber-500"
                   style={{ width: `${simulatedProgress}%` }}
                   transition={{ ease: 'easeOut' }}
                 />
@@ -211,15 +245,15 @@ export default function StudioPanel({
                         isActive
                           ? 'text-slate-200 font-bold'
                           : isDone
-                          ? 'text-indigo-400 opacity-60 font-semibold'
+                          ? 'text-orange-400 opacity-60 font-semibold'
                           : 'text-slate-600 font-medium'
                       }`}
                     >
                       <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center text-[7px] shrink-0 ${
                         isDone
-                          ? 'bg-indigo-500/10 border-indigo-500 text-indigo-400'
+                          ? 'bg-orange-500/10 border-orange-500 text-orange-400'
                           : isActive
-                          ? 'bg-indigo-500/10 border-indigo-400 text-indigo-300 animate-pulse'
+                          ? 'bg-orange-500/10 border-orange-400 text-orange-300 animate-pulse'
                           : 'border-white/5 bg-transparent text-slate-650'
                       }`}>
                         {isDone ? '✓' : sIdx + 1}
@@ -270,4 +304,5 @@ export default function StudioPanel({
     </aside>
   );
 }
+
 

@@ -111,8 +111,8 @@ Context excerpt: "${contextText.substring(0, 800)}..."`;
 
         const textChunks = [];
         for (const src of activeSources) {
-          if (!src.transcript) continue;
-          const paragraphs = src.transcript.split(/\n+/).map(p => p.trim()).filter(p => p.length > 20);
+          const transcriptText = src.transcript || `Source: ${src.title || 'Untitled Source'} - No transcript available.`;
+          const paragraphs = transcriptText.split(/\n+/).map(p => p.trim()).filter(p => p.length > 20);
           let chunkIndex = 0;
           for (const p of paragraphs) {
             const maxLen = 800;
@@ -190,6 +190,9 @@ Context excerpt: "${contextText.substring(0, 800)}..."`;
       // Step 6: Yield sources immediately before tokens stream
       yield { type: 'sources', items: sourcesUsed };
 
+      logger.info('[PIPELINE] Context Length', { workspaceId, contextTokens: Math.round(contextText.length / 4) });
+      logger.info('[PIPELINE] Model Response Started', { workspaceId });
+
       // Step 7: Execute Gemini streaming
       const streamResult = await this.geminiFlash.generateContentStream({
         systemInstruction,
@@ -201,7 +204,6 @@ Context excerpt: "${contextText.substring(0, 800)}..."`;
           temperature: 0.35,
           maxOutputTokens: 2000,
         },
-        signal,
       });
 
       let fullResponse = '';
@@ -211,6 +213,8 @@ Context excerpt: "${contextText.substring(0, 800)}..."`;
         fullResponse += text;
         yield { type: 'token', content: text };
       }
+
+      logger.info('[PIPELINE] Model Response Completed', { workspaceId, responseChars: fullResponse.length });
 
       // Step 8: Generate follow-up questions (async, non-blocking)
       let followUpQuestions = [];

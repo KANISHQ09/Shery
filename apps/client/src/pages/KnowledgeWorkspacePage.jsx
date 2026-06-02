@@ -54,12 +54,40 @@ export default function KnowledgeWorkspacePage() {
 
   // Right Studio Panel collapse persistence state
   const [isRightPanelCollapsed, setIsRightPanelCollapsed] = useState(() => {
-    return localStorage.getItem('sheryai-rightpanel-collapsed') === 'true';
+    const stored = localStorage.getItem('sheryai-rightpanel-collapsed');
+    return stored !== null ? stored === 'true' : true;
+  });
+
+  // Left Sources Panel collapse persistence state
+  const [isSourcesCollapsed, setIsSourcesCollapsed] = useState(() => {
+    const stored = localStorage.getItem('sheryai-sources-collapsed');
+    return stored !== null ? stored === 'true' : true;
   });
 
   useEffect(() => {
     localStorage.setItem('sheryai-rightpanel-collapsed', String(isRightPanelCollapsed));
   }, [isRightPanelCollapsed]);
+
+  useEffect(() => {
+    localStorage.setItem('sheryai-sources-collapsed', String(isSourcesCollapsed));
+  }, [isSourcesCollapsed]);
+
+  // Handlers for mutual exclusion
+  const handleToggleSources = () => {
+    setIsSourcesCollapsed(prev => {
+      const next = !prev;
+      if (!next) setIsRightPanelCollapsed(true);
+      return next;
+    });
+  };
+
+  const handleToggleStudio = () => {
+    setIsRightPanelCollapsed(prev => {
+      const next = !prev;
+      if (!next) setIsSourcesCollapsed(true);
+      return next;
+    });
+  };
 
   // Active workspace states
   const [activeTab, setActiveTab] = useState('chat');
@@ -73,7 +101,7 @@ export default function KnowledgeWorkspacePage() {
   const { data: workspacesRes, isLoading: spacesLoading } = useWorkspacesQuery(userId, {
     enabled: Boolean(userId),
   });
-  
+
   const workspaces = workspacesRes?.list || [];
 
   const { data: workspaceDetailRes, isLoading: workspaceLoading } = useWorkspaceQuery(workspaceId, {
@@ -159,7 +187,7 @@ export default function KnowledgeWorkspacePage() {
         alert('Only PDF documents are supported for grounding upload.');
         return;
       }
-      
+
       const formData = new FormData();
       formData.append('type', 'pdf');
       formData.append('file', file);
@@ -256,16 +284,16 @@ export default function KnowledgeWorkspacePage() {
   };
 
   return (
-    <div 
+    <div
       onDragOver={handleDragOver}
       onDragEnter={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className="flex h-[100dvh] w-screen bg-[#030305] text-slate-200 overflow-hidden font-sans relative dark-workspace"
+      className="fixed inset-0 w-full h-full flex bg-[#030305] text-slate-200 overflow-hidden font-sans dark-workspace"
     >
       {/* Ambient background glow spheres */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-500/5 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-purple-500/5 blur-[120px] pointer-events-none" />
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-orange-500/5 blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-amber-500/5 blur-[120px] pointer-events-none" />
 
       {/* 1. Left Nav Sidebar */}
       <WorkspaceSidebar
@@ -277,13 +305,14 @@ export default function KnowledgeWorkspacePage() {
         onSelectTab={setActiveTab}
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
+        activeWorkspaceSources={sources}
       />
 
       {/* Main Workspace Frame */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden min-w-0 bg-transparent">
+      <div className="flex-1 flex flex-col h-full overflow-hidden min-w-0 min-h-0 bg-transparent">
         {workspaceId && workspace ? (
           <>
-             {/* 2. Top Header bar */}
+            {/* 2. Top Header bar */}
             <WorkspaceHeader
               workspace={workspace}
               onAddSource={() => setAddSourceOpen(true)}
@@ -293,20 +322,45 @@ export default function KnowledgeWorkspacePage() {
 
             {/* Ingestion Pipeline Grid area */}
             {sources.length === 0 ? (
-              <WorkspaceEmptyState onAddSource={() => setAddSourceOpen(true)} />
+              <WorkspaceEmptyState onAddSource={() => setAddSourceOpen(true)} workspaceName={workspace.name} />
             ) : (
               <div className="flex-1 flex overflow-hidden min-h-0 relative">
-                {/* 3. Left Sources List Panel */}
-                <SourcesPanel
-                  sources={sources}
-                  activeSourceId={selectedCitation?.sourceId}
-                  onSelectSource={(sid) => setSelectedCitation({ sourceId: sid })}
-                  onDeleteSource={handleDeleteSource}
-                  onAddSource={() => setAddSourceOpen(true)}
-                />
+                {/* 3. Left Sources List Panel (Collapsible) */}
+                <div className="flex shrink-0 h-full relative z-10">
+                  <div
+                    style={{
+                      width: isSourcesCollapsed ? '0px' : '280px',
+                      minWidth: isSourcesCollapsed ? '0px' : '280px',
+                      maxWidth: isSourcesCollapsed ? '0px' : '280px',
+                      opacity: isSourcesCollapsed ? 0 : 1,
+                      transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+                    }}
+                    className="h-full overflow-hidden flex shrink-0"
+                  >
+                    <SourcesPanel
+                      sources={sources}
+                      activeSourceId={selectedCitation?.sourceId}
+                      onSelectSource={(sid) => setSelectedCitation({ sourceId: sid })}
+                      onDeleteSource={handleDeleteSource}
+                      onAddSource={() => setAddSourceOpen(true)}
+                    />
+                  </div>
+                  {/* Collapsible toggle handle button for sources */}
+                  <button
+                    onClick={handleToggleSources}
+                    className="absolute right-[-12px] top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-[#0b0c10] border border-white/10 flex items-center justify-center text-slate-400 hover:text-slate-200 shadow-md hover:scale-110 cursor-pointer z-30 transition-all duration-200"
+                    title={isSourcesCollapsed ? 'Expand Sources' : 'Collapse Sources'}
+                  >
+                    <AppIcon
+                      name="chevronLeft"
+                      size={12}
+                      className={`transform transition-transform duration-300 ${isSourcesCollapsed ? 'rotate-180' : ''}`}
+                    />
+                  </button>
+                </div>
 
                 {/* Center Content Workspace Container */}
-                <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+                <div className="flex-1 flex flex-col min-w-0 min-h-0 h-full overflow-hidden">
                   {activeTab === 'chat' && (
                     <ChatPanel
                       messages={chatStream.messages}
@@ -321,6 +375,8 @@ export default function KnowledgeWorkspacePage() {
                       onClearSession={chatStream.clearSession}
                       onSelectCitation={setSelectedCitation}
                       workspaceSources={sources}
+                      outputs={outputs}
+                      onSelectOutput={setSelectedOutput}
                     />
                   )}
 
@@ -350,7 +406,7 @@ export default function KnowledgeWorkspacePage() {
                   <div className="flex shrink-0 h-full relative z-10">
                     {/* Collapsible toggle handle button */}
                     <button
-                      onClick={() => setIsRightPanelCollapsed(prev => !prev)}
+                      onClick={handleToggleStudio}
                       className="absolute left-[-12px] top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-[#0b0c10] border border-white/10 flex items-center justify-center text-slate-400 hover:text-slate-200 shadow-md hover:scale-110 cursor-pointer z-30 transition-all duration-200"
                       title={isRightPanelCollapsed ? 'Expand Studio Panel' : 'Collapse Studio Panel'}
                     >
@@ -388,14 +444,14 @@ export default function KnowledgeWorkspacePage() {
           </>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center select-none bg-[#08090d]">
-            <AppIcon name="loader" size={24} className="animate-spin text-indigo-400 mb-3" />
+            <AppIcon name="loader" size={24} className="animate-spin text-orange-400 mb-3" />
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 animate-pulse">Mounting Knowledge Space...</span>
           </div>
         )}
       </div>
 
       {/* 5. Modals & Slide Drawers */}
-      
+
       {/* Create workspace modal */}
       <CreateWorkspaceModal
         isOpen={createOpen}
@@ -440,8 +496,8 @@ export default function KnowledgeWorkspacePage() {
 
       {/* Drop overlay for PDF documents upload */}
       {isDraggingFile && (
-        <div className="absolute inset-0 z-50 bg-[#08090d]/60 backdrop-blur-md border-[3px] border-dashed border-indigo-500 m-4 rounded-3xl flex flex-col items-center justify-center pointer-events-none animate-in fade-in duration-200">
-          <AppIcon name="upload" size={48} className="text-indigo-450 animate-bounce mb-4" />
+        <div className="absolute inset-0 z-50 bg-[#08090d]/60 backdrop-blur-md border-[3px] border-dashed border-orange-500 m-4 rounded-3xl flex flex-col items-center justify-center pointer-events-none animate-in fade-in duration-200">
+          <AppIcon name="upload" size={48} className="text-orange-450 animate-bounce mb-4" />
           <h3 className="text-xs font-extrabold text-white uppercase tracking-wider">Grounding Document Upload</h3>
           <p className="text-[9px] text-white/70 mt-1 max-w-xs text-center leading-normal font-semibold">
             Release to instantly process and index your PDF into the Qdrant vector retrieval queue.
