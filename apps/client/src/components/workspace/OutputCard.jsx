@@ -30,25 +30,25 @@ export default function OutputCard({ output, isActive, onClick, onDelete }) {
         output.status === 'ready' ? 'cursor-pointer' : 'cursor-wait opacity-75'
       } ${
         isActive
-          ? 'bg-indigo-500/[0.04] border-indigo-500/25 shadow-[0_4px_16px_rgba(99,102,241,0.08)]'
+          ? 'bg-orange-500/[0.04] border-orange-500/25 shadow-[0_4px_16px_rgba(99,102,241,0.08)]'
           : 'bg-[#0a0a0f]/40 border-white/5 hover:border-white/10 hover:bg-white/[0.025] hover:shadow-[0_4px_12px_rgba(0,0,0,0.2)]'
       }`}
     >
       <div className="flex items-center gap-3 min-w-0 flex-1 pr-6">
         <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border transition-all duration-300 ${
           isActive
-            ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400'
-            : 'bg-white/[0.02] border-white/5 text-slate-450 group-hover:text-indigo-455 group-hover:border-white/10'
+            ? 'bg-orange-500/10 border-orange-500/20 text-orange-400'
+            : 'bg-white/[0.02] border-white/5 text-slate-450 group-hover:text-orange-455 group-hover:border-white/10'
         }`}>
           <AppIcon name={getIcon()} size={12} />
         </div>
         <div className="min-w-0">
-          <span className={`text-[11px] font-bold truncate block transition duration-150 leading-tight ${isActive ? 'text-indigo-400' : 'text-slate-200 group-hover:text-indigo-400'}`}>
+          <span className={`text-[11px] font-bold truncate block transition duration-150 leading-tight ${isActive ? 'text-orange-400' : 'text-slate-200 group-hover:text-orange-400'}`}>
             {output.title}
           </span>
           <div className="flex items-center gap-1.5 mt-1">
             {output.status === 'generating' && (
-              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-ping" />
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-ping" />
             )}
             <span className="text-[9px] text-slate-500 block leading-none font-medium">
               {output.status === 'generating' ? 'Synthesizing...' : getRelativeTime(output.createdAt)}
@@ -70,4 +70,5 @@ export default function OutputCard({ output, isActive, onClick, onDelete }) {
     </div>
   );
 }
+
 

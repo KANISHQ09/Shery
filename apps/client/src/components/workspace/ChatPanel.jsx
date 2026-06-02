@@ -30,10 +30,12 @@ export default function ChatPanel({
   onClearSession,
   onSelectCitation,
   workspaceSources = [],
+  outputs = [],
+  onSelectOutput,
 }) {
   const [input, setInput] = useState('');
   const [thinkingStage, setThinkingStage] = useState(0);
-  const messagesEndRef = useRef(null);
+  const scrollRef = useRef(null);
   const textareaRef = useRef(null);
 
   const hasDegradedSources = workspaceSources.some(s =>
@@ -41,7 +43,12 @@ export default function ChatPanel({
   );
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
+    }
   };
 
   useEffect(() => {
@@ -88,14 +95,14 @@ export default function ChatPanel({
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#030305] relative overflow-hidden">
+    <div className="flex-1 flex flex-col h-full bg-[#030305] relative overflow-hidden min-h-0">
       {/* Panel Header */}
       <div className="h-16 flex items-center justify-between px-6 border-b border-white/5 bg-[#06070a]/40 backdrop-blur-md shrink-0 z-10">
         <div className="flex items-center gap-2.5">
           {/* Live indicator */}
           <div className="relative w-2 h-2 shrink-0">
-            <div className="absolute inset-0 rounded-full bg-indigo-500 animate-ping opacity-45" />
-            <div className="relative w-2 h-2 rounded-full bg-indigo-500" />
+            <div className="absolute inset-0 rounded-full bg-orange-500 animate-ping opacity-45" />
+            <div className="relative w-2 h-2 rounded-full bg-orange-500" />
           </div>
           <span className="text-xs font-bold tracking-tight text-slate-100">Knowledge Workspace Tutor</span>
           {hasDegradedSources ? (
@@ -134,43 +141,92 @@ export default function ChatPanel({
       )}
 
       {/* Message Feed */}
-      <div className="flex-1 overflow-y-auto scrollbar-thin min-h-0 relative">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-thin min-h-0 relative">
         <div className="max-w-3xl mx-auto w-full px-6 py-6 space-y-8">
 
-          {/* Empty state */}
-          {messages.length === 0 && !isStreaming && (
-            <div className="flex flex-col items-center justify-center pt-16 pb-8 text-center select-none">
-              {/* Icon */}
-              <div className="relative mb-6">
-                <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shadow-lg shadow-indigo-950/20">
-                  <AppIcon name="bot" size={26} className="text-indigo-400 animate-pulse" />
+          {/* The Knowledge Journey: Always visible at the top */}
+          <div className="max-w-3xl mx-auto w-full pt-12 pb-8 animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-12 text-slate-300">
+            {workspaceSources.length > 0 ? (
+              <>
+                {/* Document Overview */}
+                <section className="space-y-4">
+                  <h1 className="text-3xl font-bold text-slate-100 tracking-tight">
+                    {workspaceSources.length === 1 
+                      ? workspaceSources[0].title 
+                      : `${workspaceSources.length} Grounding Sources Active`}
+                  </h1>
+                  <p className="text-sm leading-relaxed text-slate-400 max-w-2xl">
+                    {workspaceSources.length === 1
+                      ? `A comprehensive knowledge document covering core concepts from ${workspaceSources[0].title}.`
+                      : 'A unified knowledge space synthesizing insights across all your uploaded documents.'}
+                  </p>
+                </section>
+
+                {/* Thin Divider */}
+                <div className="h-px bg-white/[0.03] w-full" />
+
+                {/* Key Concepts */}
+                <section className="space-y-6">
+                  <h2 className="text-xs font-semibold text-orange-400 uppercase tracking-widest flex items-center gap-2">
+                    <AppIcon name="brain" size={14} />
+                    Key Concepts
+                  </h2>
+                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {['Differential Equations', 'Laplace Transform', 'Fourier Series', 'Complex Analysis'].map((topic, i) => (
+                      <li key={i} className="flex items-start gap-3">
+                        <span className="text-orange-500 mt-0.5">•</span>
+                        <span className="text-sm font-medium text-slate-200">{topic}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+
+                {/* Recent Generated Notes (Option B) */}
+                {outputs && outputs.length > 0 && (
+                  <>
+                    {/* Thin Divider */}
+                    <div className="h-px bg-white/[0.03] w-full" />
+                    
+                    <section className="space-y-6">
+                      <h2 className="text-xs font-semibold text-orange-400 uppercase tracking-widest flex items-center gap-2">
+                        <AppIcon name="book" size={14} />
+                        Recent Generated Notes
+                      </h2>
+                      <div className="grid grid-cols-2 gap-4">
+                        {outputs.slice(0, 4).map((output) => (
+                          <button
+                            key={output.id}
+                            onClick={() => onSelectOutput && onSelectOutput(output)}
+                            className="group flex flex-col p-4 rounded-xl bg-white/[0.015] border border-white/5 hover:border-orange-500/20 hover:bg-orange-500/[0.02] transition text-left cursor-pointer"
+                          >
+                            <div className="flex items-center gap-2 mb-2">
+                              <AppIcon name={output.type === 'study_guide' ? 'book' : 'sparkles'} size={14} className="text-emerald-450" />
+                              <span className="text-xs font-bold text-slate-200 group-hover:text-orange-300 transition truncate">
+                                {output.title || 'Generated Notes'}
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-slate-500 line-clamp-2 leading-relaxed">
+                              {output.content?.substring(0, 100) || 'Click to view full notes.'}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </section>
+                  </>
+                )}
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center text-center select-none pt-12">
+                <div className="w-16 h-16 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center mb-6">
+                  <AppIcon name="upload" size={26} className="text-orange-400 animate-bounce" />
                 </div>
-                <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                </div>
+                <h3 className="text-lg font-bold text-slate-100 mb-2">Knowledge Space Empty</h3>
+                <p className="text-sm text-slate-400 leading-relaxed max-w-sm mb-8">
+                  Upload a document in the left sidebar to generate a Knowledge Overview and start chatting.
+                </p>
               </div>
-
-              <h3 className="text-sm font-bold text-slate-100 mb-1.5">Ask your knowledge base</h3>
-              <p className="text-[11px] text-slate-400 leading-relaxed max-w-sm mb-8">
-                Ask any question about your uploaded sources. The AI will synthesize grounded responses with citations.
-              </p>
-
-              {/* Suggestion chips */}
-              {workspaceSources.length > 0 && (
-                <div className="flex flex-wrap gap-2 justify-center max-w-md">
-                  {EMPTY_STATE_SUGGESTIONS.map((q, i) => (
-                    <button
-                      key={i}
-                      onClick={() => handleSuggestionClick(q)}
-                      className="text-[10px] font-semibold text-slate-400 hover:text-indigo-300 bg-white/[0.015] hover:bg-indigo-500/5 border border-white/5 hover:border-indigo-500/20 rounded-xl px-3.5 py-2 transition-all duration-200 text-left cursor-pointer"
-                    >
-                      {q}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Message list */}
           {messages.map((msg) => (
@@ -185,29 +241,27 @@ export default function ChatPanel({
           {/* AI Thinking State */}
           {isStreaming && !currentStreamText && (
             <div className="flex gap-3.5 justify-start animate-in fade-in slide-in-from-bottom-2 duration-200">
-              <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0 mt-0.5 relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-transparent animate-pulse" />
-                <AppIcon name="bot" size={13} className="text-indigo-400 relative z-10" />
+              <div className="w-8 h-8 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0 mt-0.5 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-orange-500/20 to-transparent animate-pulse" />
+                <AppIcon name="bot" size={13} className="text-orange-400 relative z-10" />
               </div>
               <div className="bg-white/[0.012] border border-white/5 rounded-2xl rounded-tl-sm p-4 space-y-3 min-w-[240px] shadow-md">
                 {THINKING_STAGES.map((stage, i) => (
                   <div
                     key={i}
-                    className={`flex items-center gap-2.5 text-[10px] font-semibold transition-all duration-300 ${
-                      i === thinkingStage
-                        ? 'text-indigo-300'
+                    className={`flex items-center gap-2.5 text-[10px] font-semibold transition-all duration-300 ${i === thinkingStage
+                        ? 'text-orange-300'
                         : i < thinkingStage
-                        ? 'text-slate-500'
-                        : 'text-slate-700'
-                    }`}
+                          ? 'text-slate-500'
+                          : 'text-slate-700'
+                      }`}
                   >
-                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 transition-all ${
-                      i === thinkingStage
-                        ? 'bg-indigo-400 animate-ping'
+                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 transition-all ${i === thinkingStage
+                        ? 'bg-orange-400 animate-ping'
                         : i < thinkingStage
-                        ? 'bg-slate-650'
-                        : 'bg-white/[0.03]'
-                    }`} />
+                          ? 'bg-slate-650'
+                          : 'bg-white/[0.03]'
+                      }`} />
                     {stage.label}
                   </div>
                 ))}
@@ -236,15 +290,38 @@ export default function ChatPanel({
             </div>
           )}
 
-          <div ref={messagesEndRef} />
+          {/* Spacer to ensure bottom padding is respected during scroll */}
+          <div className="h-4" />
         </div>
       </div>
 
-      {/* Sticky Flex Input Container */}
-      <div className="border-t border-white/5 bg-[#030305] px-6 py-4 shrink-0 z-10">
-        <div className="max-w-3xl mx-auto">
+      {/* Massive Chat Input Bar */}
+      <div className="w-full bg-[#030305]/90 backdrop-blur-xl pt-4 pb-8 shrink-0 z-10 sticky bottom-0 border-t border-white/[0.03]">
+        <div className="max-w-3xl mx-auto px-6 relative">
+          
+          {/* Inline Suggestions (Immediately anchored to the top of the chat input) */}
+          {messages.length === 0 && workspaceSources.length > 0 && !isStreaming && (
+            <div className="flex gap-2 mb-3 overflow-x-auto scrollbar-none pb-1">
+              {[
+                'What are the core concepts covered in my sources?',
+                'Explain the main architecture described here.',
+                'What are the key takeaways from these materials?',
+                'Compare the different approaches mentioned.',
+              ].map((q, i) => (
+                <button
+                  key={i}
+                  onClick={() => handleSuggestionClick(q)}
+                  className="text-[11px] px-3.5 py-1.5 rounded-full bg-white/[0.03] border border-white/5 text-slate-400 hover:text-orange-300 hover:bg-orange-500/10 hover:border-orange-500/20 transition whitespace-nowrap cursor-pointer"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Input Box */}
           <form onSubmit={handleSubmit} className="relative">
-            <div className="relative bg-[#06070a]/90 border border-white/5 rounded-2xl focus-within:border-indigo-500/25 focus-within:shadow-[0_0_20px_rgba(99,102,241,0.05)] transition-all duration-300 backdrop-blur-md">
+            <div className="relative rounded-2xl bg-white/[0.02] border border-white/10 focus-within:border-orange-500/40 focus-within:bg-white/[0.04] transition-all duration-300 shadow-2xl">
               <textarea
                 ref={textareaRef}
                 value={input}
@@ -252,34 +329,34 @@ export default function ChatPanel({
                 onKeyDown={handleKeyDown}
                 placeholder={`Ask anything in ${mode.replace('_', ' ')} mode…`}
                 rows={1}
-                className="w-full bg-transparent pl-4 pr-14 py-4 text-[12px] text-slate-100 placeholder-slate-600 focus:outline-none resize-none max-h-[120px] scrollbar-none leading-relaxed"
+                className="w-full bg-transparent p-5 pr-14 text-base text-slate-100 placeholder-slate-500 resize-none outline-none min-h-[120px] scrollbar-none leading-relaxed"
               />
 
               {/* Send / Stop button */}
-              <div className="absolute right-3.5 bottom-3.5">
+              <div className="absolute right-4 bottom-4">
                 {isStreaming ? (
                   <button
                     type="button"
                     onClick={onStopStreaming}
-                    className="w-8 h-8 flex items-center justify-center rounded-xl bg-rose-950/30 border border-rose-900/30 text-rose-400 hover:bg-rose-900/25 transition cursor-pointer"
+                    className="w-10 h-10 flex items-center justify-center rounded-xl bg-rose-950/30 border border-rose-900/30 text-rose-400 hover:bg-rose-900/25 transition cursor-pointer"
                     title="Stop"
                   >
-                    <AppIcon name="square" size={9} />
+                    <AppIcon name="square" size={11} />
                   </button>
                 ) : (
                   <button
                     type="submit"
                     disabled={!input.trim()}
-                    className="w-8 h-8 flex items-center justify-center rounded-xl bg-indigo-600 disabled:bg-white/[0.02] disabled:text-slate-600 text-white hover:bg-indigo-700 transition disabled:cursor-not-allowed shadow-md cursor-pointer"
+                    className="w-10 h-10 flex items-center justify-center rounded-xl bg-orange-600 disabled:bg-white/[0.02] disabled:text-slate-600 text-white hover:bg-orange-500 transition disabled:cursor-not-allowed shadow-lg shadow-orange-900/20 cursor-pointer"
                   >
-                    <AppIcon name="send" size={11} />
+                    <AppIcon name="send" size={13} />
                   </button>
                 )}
               </div>
             </div>
           </form>
 
-          <div className="flex items-center justify-between mt-2 px-1 text-[9px] text-slate-600 font-semibold select-none">
+          <div className="flex items-center justify-between mt-3 px-2 text-[10px] text-slate-500 font-medium select-none">
             <span>↵ Send · Shift+↵ New line</span>
             <span>Grounded strictly from your sources</span>
           </div>
@@ -288,3 +365,4 @@ export default function ChatPanel({
     </div>
   );
 }
+

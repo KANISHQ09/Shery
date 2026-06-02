@@ -126,7 +126,17 @@ class EmbeddingService {
 
     await ensureQdrantCollection();
 
-    // 1. Check Qdrant scroll resilience
+    logger.info('[PIPELINE] Chunks Generated', {
+      workspaceId,
+      sourceId,
+      chunkCount: chunks.length,
+      semanticChunks: chunks.filter(c => c.chunkType === 'semantic').length,
+      microChunks: chunks.filter(c => c.chunkType === 'micro').length,
+    });
+
+    // 1. Check Qdrant scroll resilience — only skip if FULLY indexed (strict equality)
+    // FIX: Changed from === to >= to avoid skipping when chunk count changed or
+    // vectors were partially written due to a prior crash.
     try {
       const existingPoints = await this.qdrantClient.scroll(WORKSPACE_COLLECTION, {
         filter: {
@@ -140,16 +150,43 @@ class EmbeddingService {
         with_payload: false,
       });
 
-      if (existingPoints && existingPoints.points && existingPoints.points.length === chunks.length) {
-        logger.info('All chunks already fully indexed in Qdrant. Skipping indexing.', {
+      const existingCount = existingPoints?.points?.length ?? 0;
+
+      logger.info('[PIPELINE] Qdrant existing point check', {
+        workspaceId,
+        sourceId,
+        existingCount,
+        requiredCount: chunks.length,
+      });
+
+      if (existingCount >= chunks.length) {
+        logger.info('[PIPELINE] Vectors already fully indexed in Qdrant — skipping re-index.', {
           workspaceId,
           sourceId,
-          count: chunks.length
+          count: existingCount,
         });
-        return chunks.length;
+        return existingCount;
+      }
+
+      // If partial vectors exist, delete them before re-indexing to ensure consistency
+      if (existingCount > 0 && existingCount < chunks.length) {
+        logger.info('[PIPELINE] Partial vectors detected — purging before full re-index.', {
+          workspaceId,
+          sourceId,
+          existingCount,
+          expectedCount: chunks.length,
+        });
+        await this.qdrantClient.delete(WORKSPACE_COLLECTION, {
+          filter: {
+            must: [
+              { key: 'workspaceId', match: { value: workspaceId } },
+              { key: 'sourceId', match: { value: sourceId } },
+            ],
+          },
+        });
       }
     } catch (scrollErr) {
-      logger.warn('Failed checking existing vectors in Qdrant (non-fatal)', { error: scrollErr.message });
+      logger.warn('[PIPELINE] Failed checking existing vectors in Qdrant (non-fatal)', { error: scrollErr.message });
     }
 
     // 2. Compute SHA-256 and Deduplicate / Batch fetch from Firestore Cache
@@ -189,9 +226,16 @@ class EmbeddingService {
     const missingTexts = missingHashes.map(h => uniqueHashesMap.get(h));
 
     if (missingTexts.length > 0) {
-      logger.info('Generating new embeddings for non-cached chunks...', { missingCount: missingTexts.length });
+      logger.info('[PIPELINE] Embeddings Generated (new)', { missingCount: missingTexts.length, cachedCount: cachedVectors.size });
       const newEmbeddings = await this.generateBatchEmbeddings(missingTexts);
-      
+      logger.info('[PIPELINE] Embeddings Generated (complete)', {
+        workspaceId,
+        sourceId,
+        totalEmbeddings: missingTexts.length + cachedVectors.size,
+        newlyGenerated: newEmbeddings.length,
+        fromCache: cachedVectors.size,
+      });
+
       // Store back to cache
       newEmbeddings.forEach((vector, idx) => {
         const hash = missingHashes[idx];
@@ -200,9 +244,10 @@ class EmbeddingService {
 
       if (this.dbProvider) {
         try {
-          const batchWrite = this.dbProvider().batch();
+          let batchWrite = this.dbProvider().batch();
           let opsCount = 0;
-          missingHashes.forEach((hash, idx) => {
+          for (let idx = 0; idx < missingHashes.length; idx++) {
+            const hash = missingHashes[idx];
             const ref = this.dbProvider().collection('chunkEmbeddingsCache').doc(hash);
             batchWrite.set(ref, {
               vector: newEmbeddings[idx],
@@ -212,10 +257,11 @@ class EmbeddingService {
             
             // Firestore batch write supports up to 500 ops
             if (opsCount >= 400) {
-              batchWrite.commit();
+              await batchWrite.commit();
+              batchWrite = this.dbProvider().batch();
               opsCount = 0;
             }
-          });
+          }
           if (opsCount > 0) {
             await batchWrite.commit();
           }
@@ -275,6 +321,14 @@ class EmbeddingService {
       });
 
       indexedCount += batch.length;
+
+      logger.info('[PIPELINE] Vectors Stored', {
+        workspaceId,
+        sourceId,
+        batchStored: batch.length,
+        totalStoredSoFar: indexedCount,
+        totalChunks,
+      });
       
       // Update progress in state machine
       if (this.stateMachine) {
@@ -306,10 +360,11 @@ class EmbeddingService {
       });
     }
 
-    logger.info('Hierarchical progressive indexing complete', {
+    logger.info('[PIPELINE] Vectors Stored (COMPLETE)', {
       workspaceId,
       sourceId,
       totalIndexed: indexedCount,
+      status: 'all_vectors_written_to_qdrant',
     });
 
     return indexedCount;

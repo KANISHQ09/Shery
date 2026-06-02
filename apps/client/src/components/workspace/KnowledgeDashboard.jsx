@@ -87,7 +87,7 @@ export default function KnowledgeDashboard({
       concepts: c.concepts || [],
       sourceIds: c.sourceIds || [],
       size: Math.max(12, Math.min(22, (c.concepts?.length || 2) * 2.5 + 8)),
-      color: ['indigo', 'violet', 'cyan', 'emerald', 'amber'][idx % 5],
+      color: ['orange', 'violet', 'cyan', 'emerald', 'amber'][idx % 5],
     };
   });
 
@@ -181,13 +181,13 @@ export default function KnowledgeDashboard({
       {/* 1. Header Banner */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between bg-white/[0.01] border border-white/5 rounded-2xl p-6 shadow-sm relative overflow-hidden">
         {/* Glow Spheres */}
-        <div className="absolute right-0 top-0 w-80 h-80 rounded-full bg-indigo-500/[0.02] blur-[80px] pointer-events-none" />
+        <div className="absolute right-0 top-0 w-80 h-80 rounded-full bg-orange-500/[0.02] blur-[80px] pointer-events-none" />
         <div className="absolute inset-y-0 right-0 w-48 opacity-10 pointer-events-none hidden md:block">
-          <AppIcon name="brain" size={120} className="text-indigo-400 absolute -bottom-10 -right-6" />
+          <AppIcon name="brain" size={120} className="text-orange-400 absolute -bottom-10 -right-6" />
         </div>
 
         <div className="space-y-1.5 relative z-10 max-w-xl">
-          <span className="text-[9px] font-extrabold text-indigo-400 tracking-widest uppercase block">Workspace Intelligence</span>
+          <span className="text-[9px] font-extrabold text-orange-400 tracking-widest uppercase block">Workspace Intelligence</span>
           <h2 className="text-sm font-extrabold text-white uppercase tracking-tight">Cognitive Operating System</h2>
           <p className="text-[10px] text-slate-450 leading-relaxed font-semibold">
             Analyse the semantic connectivity of your grounding database, view weaknesses/prerequisites, and auto-synthesize editorial textbooks.
@@ -197,7 +197,7 @@ export default function KnowledgeDashboard({
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={onGenerateStudyGuide}
-          className="mt-4 md:mt-0 relative z-10 px-4 py-2.5 text-[9.5px] font-extrabold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-lg hover:shadow-indigo-500/10 flex items-center gap-2 transition uppercase tracking-wider cursor-pointer"
+          className="mt-4 md:mt-0 relative z-10 px-4 py-2.5 text-[9.5px] font-extrabold text-white bg-orange-600 hover:bg-orange-700 rounded-xl shadow-lg hover:shadow-orange-500/10 flex items-center gap-2 transition uppercase tracking-wider cursor-pointer"
         >
           <AppIcon name="sparkles" size={11} />
           <span>Synthesize Study Guide</span>
@@ -208,17 +208,17 @@ export default function KnowledgeDashboard({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* AI Cognitive Overview Hero */}
-        <div className="lg:col-span-2 bg-[#06070a]/40 border border-white/5 rounded-2xl p-5 flex flex-col md:flex-row items-center gap-6 relative overflow-hidden group hover:border-indigo-500/10 transition-all duration-300">
+        <div className="lg:col-span-2 bg-[#06070a]/40 border border-white/5 rounded-2xl p-5 flex flex-col md:flex-row items-center gap-6 relative overflow-hidden group hover:border-orange-500/10 transition-all duration-300">
           {/* Subtle background glow */}
-          <div className="absolute top-0 left-0 w-32 h-32 rounded-full bg-indigo-500/5 blur-3xl pointer-events-none" />
+          <div className="absolute top-0 left-0 w-32 h-32 rounded-full bg-orange-500/5 blur-3xl pointer-events-none" />
           
-          <div className="w-16 h-16 rounded-full border border-indigo-500/20 bg-indigo-500/5 flex items-center justify-center shrink-0 relative orb-pulse">
-            <AppIcon name="brain" size={20} className="text-indigo-400 relative z-10" />
+          <div className="w-16 h-16 rounded-full border border-orange-500/20 bg-orange-500/5 flex items-center justify-center shrink-0 relative orb-pulse">
+            <AppIcon name="brain" size={20} className="text-orange-400 relative z-10" />
           </div>
 
           <div className="flex-1 space-y-4 text-center md:text-left">
             <div>
-              <span className="text-[8px] font-extrabold text-indigo-400 uppercase tracking-widest block mb-0.5">Grounding Analysis</span>
+              <span className="text-[8px] font-extrabold text-orange-400 uppercase tracking-widest block mb-0.5">Grounding Analysis</span>
               <h3 className="text-xs font-bold text-slate-200 leading-tight">
                 {completeness > 70 
                   ? 'Your workspace has solid grounded semantic coverage across key topics.' 
@@ -227,7 +227,7 @@ export default function KnowledgeDashboard({
             </div>
             
             <p className="text-[10px] text-slate-450 leading-relaxed font-semibold">
-              Detected <strong className="text-slate-200 font-bold">{nodes.length} primary concept clusters</strong> indexing <strong className="text-slate-200 font-bold">{chunkCount} chunks</strong>. Grounding reliability is rated as <span className="text-indigo-400 font-bold">Optimal</span>.
+              Detected <strong className="text-slate-200 font-bold">{nodes.length} primary concept clusters</strong> indexing <strong className="text-slate-200 font-bold">{chunkCount} chunks</strong>. Grounding reliability is rated as <span className="text-orange-400 font-bold">Optimal</span>.
             </p>
 
             <div className="flex flex-wrap gap-5 pt-1 justify-center md:justify-start">
@@ -247,10 +247,10 @@ export default function KnowledgeDashboard({
         </div>
 
         {/* Coverage Completeness Circular Meter */}
-        <div className="bg-[#06070a]/40 border border-white/5 rounded-2xl p-5 flex flex-col justify-between hover:border-indigo-500/10 transition-all duration-300">
+        <div className="bg-[#06070a]/40 border border-white/5 rounded-2xl p-5 flex flex-col justify-between hover:border-orange-500/10 transition-all duration-300">
           <div className="flex items-center justify-between border-b border-white/5 pb-2.5">
             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Semantic Completeness</span>
-            <AppIcon name="target" size={12} className="text-indigo-400" />
+            <AppIcon name="target" size={12} className="text-orange-400" />
           </div>
           
           <div className="py-4 flex flex-col items-center justify-center relative select-none">
@@ -297,7 +297,7 @@ export default function KnowledgeDashboard({
             </div>
             <div className="flex justify-between items-center">
               <span className="text-slate-500">Mastery Index Score</span>
-              <span className="text-indigo-400 font-bold">Optimal</span>
+              <span className="text-orange-400 font-bold">Optimal</span>
             </div>
           </div>
         </div>
@@ -308,7 +308,7 @@ export default function KnowledgeDashboard({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Interactive Knowledge Universe SVG */}
-        <div className={`bg-[#06070a]/40 border border-white/5 rounded-2xl flex flex-col hover:border-indigo-500/10 transition-all duration-300 relative overflow-hidden min-h-[400px] ${
+        <div className={`bg-[#06070a]/40 border border-white/5 rounded-2xl flex flex-col hover:border-orange-500/10 transition-all duration-300 relative overflow-hidden min-h-[400px] ${
           isFullscreenGraph ? 'lg:col-span-3 h-[75vh]' : 'lg:col-span-2'
         }`}>
           {/* Header controls */}
@@ -318,7 +318,7 @@ export default function KnowledgeDashboard({
                 <h3 className="text-xs font-extrabold text-slate-200 tracking-wider uppercase flex items-center gap-1.5">
                   <span>Semantic Knowledge Universe</span>
                   {!hasRealData && (
-                    <span className="px-1.5 py-0.5 text-[7px] font-bold uppercase border border-indigo-500/25 text-indigo-400 bg-indigo-500/5 rounded-md">
+                    <span className="px-1.5 py-0.5 text-[7px] font-bold uppercase border border-orange-500/25 text-orange-400 bg-orange-500/5 rounded-md">
                       Demo State
                     </span>
                   )}
@@ -335,7 +335,7 @@ export default function KnowledgeDashboard({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Find concept..."
-                  className="bg-black/45 border border-white/5 rounded-lg px-2.5 py-1 text-[9.5px] text-slate-200 placeholder-slate-650 focus:outline-none focus:border-indigo-500/30 w-36 font-semibold"
+                  className="bg-black/45 border border-white/5 rounded-lg px-2.5 py-1 text-[9.5px] text-slate-200 placeholder-slate-650 focus:outline-none focus:border-orange-500/30 w-36 font-semibold"
                 />
                 {searchQuery && (
                   <button onClick={() => setSearchQuery('')} className="absolute right-2 top-2 text-slate-500 hover:text-slate-350">
@@ -371,7 +371,7 @@ export default function KnowledgeDashboard({
             ref={svgRef}
           >
             {/* Central Glow */}
-            <div className="absolute w-80 h-80 rounded-full bg-indigo-500/[0.015] blur-[120px] pointer-events-none" />
+            <div className="absolute w-80 h-80 rounded-full bg-orange-500/[0.015] blur-[120px] pointer-events-none" />
 
             <svg
               width="100%"
@@ -417,12 +417,12 @@ export default function KnowledgeDashboard({
                 {/* 2. Nodes */}
                 {filteredNodes.map((node) => {
                   const nodeColorClass = {
-                    indigo: 'stroke-indigo-500 fill-indigo-500/10 text-indigo-400',
+                    orange: 'stroke-orange-500 fill-orange-500/10 text-orange-400',
                     violet: 'stroke-violet-500 fill-violet-500/10 text-violet-400',
                     cyan: 'stroke-cyan-500 fill-cyan-500/10 text-cyan-400',
                     emerald: 'stroke-emerald-500 fill-emerald-500/10 text-emerald-450',
                     amber: 'stroke-amber-500 fill-amber-500/10 text-amber-450',
-                  }[node.color] || 'stroke-indigo-500 fill-indigo-500/10 text-indigo-400';
+                  }[node.color] || 'stroke-orange-500 fill-orange-500/10 text-orange-400';
 
                   const dimOpacity = node.isMatch ? 'opacity-100' : 'opacity-15';
 
@@ -437,7 +437,7 @@ export default function KnowledgeDashboard({
                         r={node.size + 8}
                         fill="transparent"
                         stroke="rgba(255,255,255,0.01)"
-                        className="group-hover:stroke-indigo-500/10 transition-all duration-300"
+                        className="group-hover:stroke-orange-500/10 transition-all duration-300"
                         strokeWidth={1}
                       />
                       <circle
@@ -467,10 +467,10 @@ export default function KnowledgeDashboard({
         </div>
 
         {/* AI Learning Insights & Gap Detection */}
-        <div className="bg-[#06070a]/40 border border-white/5 rounded-2xl p-5 flex flex-col justify-between hover:border-indigo-500/10 transition-all duration-300 space-y-4">
+        <div className="bg-[#06070a]/40 border border-white/5 rounded-2xl p-5 flex flex-col justify-between hover:border-orange-500/10 transition-all duration-300 space-y-4">
           <div className="flex items-center justify-between border-b border-white/5 pb-2.5 shrink-0">
             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">AI Learning Insights</span>
-            <AppIcon name="lightbulb" size={12} className="text-indigo-400" />
+            <AppIcon name="lightbulb" size={12} className="text-orange-400" />
           </div>
 
           {/* Warnings & Insights content */}
@@ -496,7 +496,7 @@ export default function KnowledgeDashboard({
 
             {/* General Proactive learning tips */}
             <div className="p-3.5 rounded-xl border border-white/5 bg-[#0a0a0f]/40 space-y-2 text-[10px] select-text">
-              <span className="text-[8.5px] font-bold text-indigo-400 uppercase tracking-wider block select-none">Roadmap Directive</span>
+              <span className="text-[8.5px] font-bold text-orange-400 uppercase tracking-wider block select-none">Roadmap Directive</span>
               <p className="text-slate-350 leading-relaxed font-medium">
                 You should examine <strong className="text-slate-200">Chunking Overlaps</strong> and <strong className="text-slate-200">Reranking scores</strong> next. Your current grounding history suggests focusing on hybrid lexical indexing configurations.
               </p>
@@ -510,10 +510,10 @@ export default function KnowledgeDashboard({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Learning Roadmap timeline */}
-        <div className="bg-[#06070a]/40 border border-white/5 rounded-2xl p-5 hover:border-indigo-500/10 transition-all duration-300 space-y-4">
+        <div className="bg-[#06070a]/40 border border-white/5 rounded-2xl p-5 hover:border-orange-500/10 transition-all duration-300 space-y-4">
           <div className="flex items-center justify-between border-b border-white/5 pb-2.5 shrink-0">
             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Learning Roadmap</span>
-            <AppIcon name="clock" size={12} className="text-indigo-400" />
+            <AppIcon name="clock" size={12} className="text-orange-400" />
           </div>
 
           <div className="space-y-4 pr-1 max-h-72 overflow-y-auto scrollbar-thin select-none">
@@ -521,13 +521,13 @@ export default function KnowledgeDashboard({
               <div key={idx} className="flex gap-3.5 items-start relative pb-2">
                 {/* Connector line */}
                 {idx < roadmapSteps.length - 1 && (
-                  <div className={`absolute left-2.5 top-6 bottom-0 w-[1px] ${step.done ? 'bg-indigo-500/35' : 'bg-white/5'}`} />
+                  <div className={`absolute left-2.5 top-6 bottom-0 w-[1px] ${step.done ? 'bg-orange-500/35' : 'bg-white/5'}`} />
                 )}
                 
                 {/* Node bubble */}
                 <div className={`w-5.5 h-5.5 rounded-full border flex items-center justify-center shrink-0 text-[8px] font-mono font-extrabold ${
                   step.done
-                    ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400'
+                    ? 'bg-orange-500/10 border-orange-500/20 text-orange-400'
                     : 'bg-white/[0.01] border-white/5 text-slate-650'
                 }`}>
                   {step.done ? '✓' : idx + 1}
@@ -543,10 +543,10 @@ export default function KnowledgeDashboard({
         </div>
 
         {/* Concept Cards Directory */}
-        <div className="lg:col-span-2 bg-[#06070a]/40 border border-white/5 rounded-2xl p-5 hover:border-indigo-500/10 transition-all duration-300 space-y-4">
+        <div className="lg:col-span-2 bg-[#06070a]/40 border border-white/5 rounded-2xl p-5 hover:border-orange-500/10 transition-all duration-300 space-y-4">
           <div className="flex items-center justify-between border-b border-white/5 pb-2.5 shrink-0">
             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Concept Cards Directory</span>
-            <AppIcon name="book" size={12} className="text-indigo-400" />
+            <AppIcon name="book" size={12} className="text-orange-400" />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-72 overflow-y-auto pr-1 scrollbar-thin">
@@ -559,14 +559,14 @@ export default function KnowledgeDashboard({
                 <div
                   key={idx}
                   onClick={() => setFocusedConcept(node)}
-                  className="p-3.5 rounded-xl border border-white/5 bg-[#0a0a0f]/40 hover:border-indigo-500/15 hover:bg-indigo-500/[0.01] transition-all duration-300 cursor-pointer flex flex-col justify-between gap-3.5 relative group"
+                  className="p-3.5 rounded-xl border border-white/5 bg-[#0a0a0f]/40 hover:border-orange-500/15 hover:bg-orange-500/[0.01] transition-all duration-300 cursor-pointer flex flex-col justify-between gap-3.5 relative group"
                 >
                   <div className="space-y-1">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-[11px] font-bold text-slate-205 group-hover:text-indigo-400 transition truncate">{node.displayName}</span>
+                      <span className="text-[11px] font-bold text-slate-205 group-hover:text-orange-400 transition truncate">{node.displayName}</span>
                       <span className={`px-1.5 py-0.5 rounded text-[7px] font-extrabold uppercase border shrink-0
                         ${status === 'Mastered' ? 'bg-emerald-950/20 border-emerald-500/25 text-emerald-450' : ''}
-                        ${status === 'Learning' ? 'bg-indigo-950/20 border-indigo-500/25 text-indigo-450' : ''}
+                        ${status === 'Learning' ? 'bg-orange-950/20 border-orange-500/25 text-orange-450' : ''}
                         ${status === 'Unexplored' ? 'bg-white/[0.03] border-white/5 text-slate-500' : ''}
                       `}>
                         {status}
@@ -585,7 +585,7 @@ export default function KnowledgeDashboard({
                     </div>
                     <div className="h-1 bg-white/[0.04] rounded-full overflow-hidden">
                       <div
-                        className={`h-full transition-all duration-500 ${status === 'Mastered' ? 'bg-emerald-500' : 'bg-indigo-500'}`}
+                        className={`h-full transition-all duration-500 ${status === 'Mastered' ? 'bg-emerald-500' : 'bg-orange-500'}`}
                         style={{ width: `${level}%` }}
                       />
                     </div>
@@ -620,7 +620,7 @@ export default function KnowledgeDashboard({
               {/* Header */}
               <div className="px-6 py-5 border-b border-white/5 flex items-center justify-between shrink-0 bg-black/10">
                 <div className="space-y-1 pr-4">
-                  <span className="text-[8px] font-extrabold text-indigo-400 uppercase tracking-widest block">Concept Deep-Dive</span>
+                  <span className="text-[8px] font-extrabold text-orange-400 uppercase tracking-widest block">Concept Deep-Dive</span>
                   <h3 className="text-xs font-extrabold text-white uppercase tracking-tight truncate max-w-[260px]">{focusedConcept.displayName}</h3>
                 </div>
                 <button
@@ -649,8 +649,8 @@ export default function KnowledgeDashboard({
                 </div>
 
                 {/* General Explanation (AI Synthesized) */}
-                <div className="space-y-2 bg-indigo-500/[0.01] border border-indigo-500/10 p-4 rounded-xl">
-                  <span className="text-[8px] font-bold text-indigo-400 uppercase tracking-widest block select-none">AI Grounded Definition</span>
+                <div className="space-y-2 bg-orange-500/[0.01] border border-orange-500/10 p-4 rounded-xl">
+                  <span className="text-[8px] font-bold text-orange-400 uppercase tracking-widest block select-none">AI Grounded Definition</span>
                   <p className="text-[11px] text-slate-300 leading-relaxed font-semibold">
                     This concept cluster aggregates vector chunks and references regarding <strong className="text-white font-bold">{focusedConcept.displayName}</strong>.
                     Based on your grounding files, this acts as a core semantic module within the current workspace database.
@@ -662,8 +662,8 @@ export default function KnowledgeDashboard({
                   <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest block">Prerequisite Paths</span>
                   <div className="flex items-center gap-2">
                     <div className="px-2 py-1 rounded-lg bg-white/[0.015] border border-white/5 text-[9px] text-slate-400 font-bold uppercase">Basic Grounding</div>
-                    <AppIcon name="chevronLeft" size={9} className="rotate-180 text-indigo-400" />
-                    <div className="px-2.5 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-[9px] text-indigo-400 font-bold uppercase">{focusedConcept.displayName}</div>
+                    <AppIcon name="chevronLeft" size={9} className="rotate-180 text-orange-400" />
+                    <div className="px-2.5 py-1 rounded-lg bg-orange-500/10 border border-orange-500/20 text-[9px] text-orange-400 font-bold uppercase">{focusedConcept.displayName}</div>
                   </div>
                 </div>
 
@@ -677,7 +677,7 @@ export default function KnowledgeDashboard({
                           <AppIcon name="file" size={10} className="text-slate-500 shrink-0" />
                           <span className="text-slate-400 font-bold truncate block">Grounding Document #{idx + 1}</span>
                         </div>
-                        <span className="text-[7.5px] text-indigo-450 bg-indigo-500/5 border border-indigo-500/10 px-2 py-0.5 rounded uppercase font-extrabold shrink-0">Active</span>
+                        <span className="text-[7.5px] text-orange-450 bg-orange-500/5 border border-orange-500/10 px-2 py-0.5 rounded uppercase font-extrabold shrink-0">Active</span>
                       </div>
                     ))}
                   </div>
@@ -685,7 +685,7 @@ export default function KnowledgeDashboard({
 
                 {/* Mini Recall Active Quiz */}
                 <div className="space-y-4 border-t border-white/5 pt-5">
-                  <span className="text-[8px] font-extrabold text-indigo-400 uppercase tracking-widest block select-none">Active Recall Self-Quiz</span>
+                  <span className="text-[8px] font-extrabold text-orange-400 uppercase tracking-widest block select-none">Active Recall Self-Quiz</span>
                   
                   {[
                     {
@@ -721,7 +721,7 @@ export default function KnowledgeDashboard({
                                 btnStyle = 'border-white/5 opacity-30 text-slate-600';
                               }
                             } else if (isSelected) {
-                              btnStyle = 'border-indigo-500/35 bg-indigo-500/5 text-indigo-400 font-bold';
+                              btnStyle = 'border-orange-500/35 bg-orange-500/5 text-orange-400 font-bold';
                             }
 
                             return (
@@ -741,7 +741,7 @@ export default function KnowledgeDashboard({
                           <button
                             onClick={() => ans && setQuizSubmitted(p => ({ ...p, [idx]: true }))}
                             disabled={!ans}
-                            className="w-full text-center py-2 text-[9.5px] font-bold text-white bg-indigo-650 hover:bg-indigo-600 disabled:opacity-40 rounded-lg transition cursor-pointer"
+                            className="w-full text-center py-2 text-[9.5px] font-bold text-white bg-orange-650 hover:bg-orange-600 disabled:opacity-40 rounded-lg transition cursor-pointer"
                           >
                             Submit Answer
                           </button>
@@ -762,7 +762,7 @@ export default function KnowledgeDashboard({
               <div className="px-6 py-4 border-t border-white/5 bg-black/10 flex gap-2 shrink-0 select-none">
                 <button
                   onClick={onGenerateStudyGuide}
-                  className="flex-1 py-2 text-[9.5px] font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition uppercase tracking-wider cursor-pointer"
+                  className="flex-1 py-2 text-[9.5px] font-bold text-white bg-orange-600 hover:bg-orange-700 rounded-xl transition uppercase tracking-wider cursor-pointer"
                 >
                   Synthesize Guide
                 </button>
@@ -783,3 +783,4 @@ export default function KnowledgeDashboard({
     </div>
   );
 }
+

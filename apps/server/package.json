@@ -6,9 +6,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "predev": "lsof -ti:5001 | xargs kill -9 2>/dev/null; exit 0",
+    "predev": "echo starting server",
     "dev": "nodemon server.js",
-    "test": "vitest run"
+    "test": "vitest run --pool=forks"
   },
   "keywords": [],
   "author": "",

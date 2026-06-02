@@ -3,7 +3,7 @@ import AppIcon from '../AppIcon';
 
 export default function WorkspaceTranscriptStatus({ progress = 0, stageMessage = 'Initializing...' }) {
   const [logs, setLogs] = useState([]);
-  const terminalEndRef = useRef(null);
+  const scrollRef = useRef(null);
 
   useEffect(() => {
     // Add stageMessage as a log entry if not already present
@@ -26,7 +26,12 @@ export default function WorkspaceTranscriptStatus({ progress = 0, stageMessage =
   }, [stageMessage, progress]);
 
   useEffect(() => {
-    terminalEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
+    }
   }, [logs]);
 
   return (
@@ -43,7 +48,7 @@ export default function WorkspaceTranscriptStatus({ progress = 0, stageMessage =
         <AppIcon name="terminal" size={10} className="text-accent" />
       </div>
 
-      <div className="max-h-[160px] overflow-y-auto space-y-1.5 scrollbar-thin text-green-400/90 leading-normal">
+      <div ref={scrollRef} className="max-h-[160px] overflow-y-auto space-y-1.5 scrollbar-thin text-green-400/90 leading-normal">
         {logs.map((log, index) => (
           <div key={index} className="flex items-start gap-1.5">
             <span className="text-muted shrink-0">[{log.timestamp}]</span>
@@ -60,7 +65,7 @@ export default function WorkspaceTranscriptStatus({ progress = 0, stageMessage =
             <span className="w-1.5 h-3 bg-accent ml-1" />
           </div>
         )}
-        <div ref={terminalEndRef} />
+        <div className="h-2" />
       </div>
     </div>
   );

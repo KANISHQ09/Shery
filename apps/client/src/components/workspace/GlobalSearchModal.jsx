@@ -117,12 +117,12 @@ export default function GlobalSearchModal({ isOpen, onClose, workspaceId, onSele
               setSelectedIndex(0);
             }}
             placeholder="Search documents or type '/' for workspace quick actions..."
-            className="w-full bg-white/[0.02] border border-white/5 rounded-xl pl-9 pr-4 py-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500/30 focus:bg-white/[0.03] transition font-semibold"
+            className="w-full bg-white/[0.02] border border-white/5 rounded-xl pl-9 pr-4 py-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-orange-500/30 focus:bg-white/[0.03] transition font-semibold"
           />
           <AppIcon name="search" size={14} className="absolute left-3.5 top-3.5 text-slate-405 text-slate-500" />
           
           {searching && (
-            <AppIcon name="loader" size={12} className="absolute right-3 top-4 animate-spin text-indigo-400" />
+            <AppIcon name="loader" size={12} className="absolute right-3 top-4 animate-spin text-orange-400" />
           )}
         </div>
 
@@ -144,17 +144,17 @@ export default function GlobalSearchModal({ isOpen, onClose, workspaceId, onSele
                   }}
                   className={`p-3 rounded-xl border text-left cursor-pointer transition flex items-center justify-between ${
                     selectedIndex === idx
-                      ? 'bg-indigo-950/20 border-indigo-500/25 text-indigo-300 shadow-sm'
+                      ? 'bg-orange-950/20 border-orange-500/25 text-orange-300 shadow-sm'
                       : 'bg-transparent border-transparent hover:bg-white/[0.02]'
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className={`w-7 h-7 rounded-lg flex items-center justify-center border shrink-0 transition
-                      ${selectedIndex === idx ? 'bg-indigo-950/40 border-indigo-500/20 text-indigo-400' : 'bg-white/[0.02] border-white/5 text-slate-400'}`}>
+                      ${selectedIndex === idx ? 'bg-orange-950/40 border-orange-500/20 text-orange-400' : 'bg-white/[0.02] border-white/5 text-slate-400'}`}>
                       <AppIcon name={cmd.icon} size={11} />
                     </div>
                     <div className="min-w-0">
-                      <span className={`text-[10px] font-bold leading-none block ${selectedIndex === idx ? 'text-indigo-400' : 'text-slate-350'}`}>{cmd.title}</span>
+                      <span className={`text-[10px] font-bold leading-none block ${selectedIndex === idx ? 'text-orange-400' : 'text-slate-350'}`}>{cmd.title}</span>
                       <span className="text-[8px] text-slate-500 leading-none block mt-1">{cmd.sub}</span>
                     </div>
                   </div>
@@ -182,18 +182,18 @@ export default function GlobalSearchModal({ isOpen, onClose, workspaceId, onSele
               }}
               className={`p-3 rounded-xl border text-left cursor-pointer transition ${
                 selectedIndex === idx
-                  ? 'bg-indigo-950/20 border-indigo-500/25 shadow-sm'
+                  ? 'bg-orange-950/20 border-orange-500/25 shadow-sm'
                   : 'bg-transparent border-transparent hover:bg-white/[0.02]'
               }`}
             >
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2 min-w-0 pr-3">
                   <div className={`w-5 h-5 rounded-md flex items-center justify-center border shrink-0 transition ${
-                    selectedIndex === idx ? 'bg-indigo-950/40 border-indigo-500/20 text-indigo-400' : 'bg-white/[0.02] border-white/5 text-slate-400'
+                    selectedIndex === idx ? 'bg-orange-950/40 border-orange-500/20 text-orange-400' : 'bg-white/[0.02] border-white/5 text-slate-400'
                   }`}>
                     <AppIcon name={res.sourceType === 'youtube' ? 'video' : 'file'} size={10} />
                   </div>
-                  <span className={`text-[10px] font-bold leading-tight truncate ${selectedIndex === idx ? 'text-indigo-300 font-extrabold' : 'text-slate-300'}`}>
+                  <span className={`text-[10px] font-bold leading-tight truncate ${selectedIndex === idx ? 'text-orange-300 font-extrabold' : 'text-slate-300'}`}>
                     {res.sourceTitle}
                   </span>
                 </div>
@@ -201,12 +201,12 @@ export default function GlobalSearchModal({ isOpen, onClose, workspaceId, onSele
                   <span className="text-[8px] text-slate-450 font-semibold bg-white/[0.04] border border-white/5 px-2 py-0.5 rounded-md">
                     {res.startTime !== null ? 'Timestamp ' : 'Page '}{res.startTime !== null ? `${Math.floor(res.startTime / 60)}:${String(Math.floor(res.startTime % 60)).padStart(2, '0')}` : res.pageNumber || 1}
                   </span>
-                  <span className="text-[9px] font-bold text-indigo-400">
+                  <span className="text-[9px] font-bold text-orange-400">
                     {Math.round(res.relevance * 100) || 82}%
                   </span>
                 </div>
               </div>
-              <p className={`text-[10px] leading-normal line-clamp-2 italic pr-4 pl-7 ${selectedIndex === idx ? 'text-indigo-200/70' : 'text-slate-500'}`}>
+              <p className={`text-[10px] leading-normal line-clamp-2 italic pr-4 pl-7 ${selectedIndex === idx ? 'text-orange-200/70' : 'text-slate-500'}`}>
                 &ldquo;...{res.text}...&rdquo;
               </p>
             </div>
@@ -222,3 +222,4 @@ export default function GlobalSearchModal({ isOpen, onClose, workspaceId, onSele
     </div>
   );
 }
+

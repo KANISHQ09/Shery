@@ -45,7 +45,7 @@ export default function WorkspaceInfrastructureHealthPanel() {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8 bg-white border border-slate-200/60 shadow-sm rounded-2xl animate-pulse">
-        <AppIcon name="loader" size={16} className="animate-spin text-indigo-600" />
+        <AppIcon name="loader" size={16} className="animate-spin text-orange-600" />
         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 ml-2">Loading Infrastructure Diagnostics...</span>
       </div>
     );
@@ -57,13 +57,13 @@ export default function WorkspaceInfrastructureHealthPanel() {
   return (
     <div className="bg-white border border-slate-200/60 shadow-sm shadow-slate-100/5 rounded-2xl p-5 space-y-5 transition duration-300 hover:border-slate-300 relative overflow-hidden group">
       {/* Background glow */}
-      <div className="absolute -top-12 -right-12 w-28 h-28 bg-indigo-500/5 rounded-full blur-2xl -z-10 group-hover:bg-indigo-500/8" />
+      <div className="absolute -top-12 -right-12 w-28 h-28 bg-orange-500/5 rounded-full blur-2xl -z-10 group-hover:bg-orange-500/8" />
 
       {/* Header */}
       <div className="flex items-center justify-between border-b border-slate-100 pb-3">
         <div className="flex items-center gap-2">
           <div className={`p-1.5 rounded-lg border ${
-            isQdrantHealthy ? 'bg-indigo-50 border-indigo-100/50 text-indigo-600' : 'bg-rose-50 border-rose-100 text-rose-600'
+            isQdrantHealthy ? 'bg-orange-50 border-orange-100/50 text-orange-600' : 'bg-rose-50 border-rose-100 text-rose-600'
           }`}>
             <AppIcon name="database" size={12} />
           </div>
@@ -147,7 +147,7 @@ export default function WorkspaceInfrastructureHealthPanel() {
           <div className="flex justify-between items-center">
             <h5 className="text-[9px] font-black text-slate-800 uppercase tracking-wider">Deferred Indexing Queue</h5>
             {deferredQueueSize > 0 && (
-              <span className="text-[7px] bg-indigo-50 border border-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded font-extrabold uppercase animate-pulse">
+              <span className="text-[7px] bg-orange-50 border border-orange-100 text-orange-700 px-1.5 py-0.5 rounded font-extrabold uppercase animate-pulse">
                 Flushing
               </span>
             )}
@@ -187,3 +187,4 @@ export default function WorkspaceInfrastructureHealthPanel() {
     </div>
   );
 }
+

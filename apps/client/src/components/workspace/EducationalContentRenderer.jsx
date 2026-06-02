@@ -94,7 +94,7 @@ export function InlineContent({ text, onSelectCitation, messageSources }) {
             return <em key={i} className="italic text-slate-300">{part.value}</em>;
           case 'code':
             return (
-              <code key={i} className="px-1.5 py-0.5 bg-white/[0.06] border border-white/8 rounded-md text-[10.5px] font-mono text-indigo-300 mx-0.5">
+              <code key={i} className="px-1.5 py-0.5 bg-white/[0.06] border border-white/8 rounded-md text-[10.5px] font-mono text-orange-300 mx-0.5">
                 {part.value}
               </code>
             );
@@ -152,7 +152,7 @@ function CodeBlock({ lang, code }) {
             <div className="w-2 h-2 rounded-full bg-white/10" />
           </div>
           {lang && (
-            <span className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest ml-1">
+            <span className="text-[9px] font-bold text-orange-400 uppercase tracking-widest ml-1">
               {lang}
             </span>
           )}
@@ -244,7 +244,7 @@ export function StandardMarkdown({ content, onSelectCitation, messageSources }) 
     }
     if (/^### /.test(trimmed)) {
       elements.push(
-        <h5 key={`h3-${i}`} className="text-[11.5px] font-bold text-indigo-400 mt-4 mb-2">
+        <h5 key={`h3-${i}`} className="text-[11.5px] font-bold text-orange-400 mt-4 mb-2">
           <InlineContent text={trimmed.replace(/^### /, '')} onSelectCitation={onSelectCitation} messageSources={messageSources} />
         </h5>
       );
@@ -267,7 +267,7 @@ export function StandardMarkdown({ content, onSelectCitation, messageSources }) 
         i++;
       }
       elements.push(
-        <blockquote key={`bq-${i}`} className="my-3 pl-4 border-l-2 border-indigo-500/30 text-slate-400 italic text-[11px] leading-relaxed">
+        <blockquote key={`bq-${i}`} className="my-3 pl-4 border-l-2 border-orange-500/30 text-slate-400 italic text-[11px] leading-relaxed">
           {quoteLines.map((l, li) => (
             <p key={li} className="mb-1">
               <InlineContent text={l} onSelectCitation={onSelectCitation} messageSources={messageSources} />
@@ -300,7 +300,7 @@ export function StandardMarkdown({ content, onSelectCitation, messageSources }) 
         <ul key={`ul-${i}`} className="my-3 space-y-1.5 pl-2">
           {listItems.map((item, li) => (
             <li key={li} className="flex items-start gap-2.5 text-[11.5px] text-slate-350 leading-relaxed">
-              <span className="w-1 h-1 rounded-full bg-indigo-400 mt-2 shrink-0" />
+              <span className="w-1 h-1 rounded-full bg-orange-400 mt-2 shrink-0" />
               <span className="flex-1">
                 <InlineContent text={item} onSelectCitation={onSelectCitation} messageSources={messageSources} />
               </span>
@@ -323,7 +323,7 @@ export function StandardMarkdown({ content, onSelectCitation, messageSources }) 
         <ol key={`ol-${i}`} className="my-3 space-y-1.5 pl-1">
           {listItems.map((item, li) => (
             <li key={li} className="flex items-start gap-2.5 text-[11.5px] text-slate-350 leading-relaxed">
-              <span className="text-[9px] font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5 select-none">
+              <span className="text-[9px] font-bold text-orange-400 bg-orange-500/10 border border-orange-500/20 w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5 select-none">
                 {item.num}
               </span>
               <span className="flex-1">
@@ -372,9 +372,9 @@ export function PrerequisiteNotice({ content }) {
 export function ChapterBlock({ title, content, onSelectCitation, messageSources }) {
   const parsed = parseEducationalContent(content);
   return (
-    <div className="my-10 space-y-6 border-l-2 border-indigo-500/20 pl-6 md:pl-8 py-2 relative">
+    <div className="my-10 space-y-6 border-l-2 border-orange-500/20 pl-6 md:pl-8 py-2 relative">
       {/* Decorative chapter badge */}
-      <div className="absolute left-[-6px] top-3.5 w-2.5 h-2.5 rounded-full bg-indigo-500 border border-indigo-300/40 shadow-[0_0_10px_rgba(99,102,241,0.6)]" />
+      <div className="absolute left-[-6px] top-3.5 w-2.5 h-2.5 rounded-full bg-orange-500 border border-orange-300/40 shadow-[0_0_10px_rgba(99,102,241,0.6)]" />
       <h3 className="text-base font-bold text-slate-100 tracking-tight uppercase border-b border-white/5 pb-3 pr-2 select-none font-display">
         {title}
       </h3>
@@ -389,11 +389,11 @@ export function ChapterBlock({ title, content, onSelectCitation, messageSources 
 
 export function ConceptDefinitionCard({ term, content, onSelectCitation, messageSources }) {
   return (
-    <div className="my-5 p-5 rounded-2xl border border-white/5 bg-white/[0.01] hover:border-indigo-500/20 hover:bg-indigo-500/[0.015] transition-all duration-300 shadow-sm relative group select-text">
-      <div className="absolute right-4 top-4 text-slate-650 group-hover:text-indigo-400 transition-colors select-none">
+    <div className="my-5 p-5 rounded-2xl border border-white/5 bg-white/[0.01] hover:border-orange-500/20 hover:bg-orange-500/[0.015] transition-all duration-300 shadow-sm relative group select-text">
+      <div className="absolute right-4 top-4 text-slate-650 group-hover:text-orange-400 transition-colors select-none">
         <AppIcon name="alignLeft" size={13} />
       </div>
-      <h5 className="text-xs font-bold text-slate-100 group-hover:text-indigo-300 transition-colors mb-2 font-display">
+      <h5 className="text-xs font-bold text-slate-100 group-hover:text-orange-300 transition-colors mb-2 font-display">
         {term}
       </h5>
       <div className="text-xs text-slate-350 leading-relaxed">
@@ -405,12 +405,12 @@ export function ConceptDefinitionCard({ term, content, onSelectCitation, message
 
 export function KeyInsightPanel({ title, content, onSelectCitation, messageSources }) {
   return (
-    <div className="my-6 p-5 rounded-2xl border border-indigo-500/10 bg-indigo-500/[0.015] shadow-[0_4px_24px_rgba(99,102,241,0.02)] flex gap-4 select-text">
-      <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0 select-none">
+    <div className="my-6 p-5 rounded-2xl border border-orange-500/10 bg-orange-500/[0.015] shadow-[0_4px_24px_rgba(99,102,241,0.02)] flex gap-4 select-text">
+      <div className="w-9 h-9 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400 shrink-0 select-none">
         <AppIcon name="lightbulb" size={16} className="animate-pulse" />
       </div>
       <div className="flex-1 min-w-0">
-        <h5 className="text-[10px] font-bold text-indigo-300 uppercase tracking-widest mb-1.5 select-none">{title || 'Key Conceptual Insight'}</h5>
+        <h5 className="text-[10px] font-bold text-orange-300 uppercase tracking-widest mb-1.5 select-none">{title || 'Key Conceptual Insight'}</h5>
         <div className="text-xs text-slate-200 leading-relaxed italic">
           <StandardMarkdown content={content} onSelectCitation={onSelectCitation} messageSources={messageSources} />
         </div>
@@ -421,11 +421,11 @@ export function KeyInsightPanel({ title, content, onSelectCitation, messageSourc
 
 export function SummaryBanner({ content }) {
   return (
-    <div className="my-6 p-5 rounded-2xl bg-gradient-to-r from-indigo-950/10 to-purple-950/10 border border-indigo-500/10 shadow-sm relative overflow-hidden select-text">
+    <div className="my-6 p-5 rounded-2xl bg-gradient-to-r from-orange-950/10 to-amber-950/10 border border-orange-500/10 shadow-sm relative overflow-hidden select-text">
       <div className="absolute right-[-15px] bottom-[-15px] opacity-[0.02] select-none pointer-events-none">
         <AppIcon name="rocket" size={90} />
       </div>
-      <h5 className="text-[10px] font-bold text-indigo-350 uppercase tracking-widest mb-2 select-none">Chapter Summary</h5>
+      <h5 className="text-[10px] font-bold text-orange-350 uppercase tracking-widest mb-2 select-none">Chapter Summary</h5>
       <p className="text-xs text-slate-350 leading-relaxed">{content.trim()}</p>
     </div>
   );
@@ -435,7 +435,7 @@ export function ExampleWalkthrough({ title, content, onSelectCitation, messageSo
   return (
     <div className="my-6 rounded-2xl border border-white/5 overflow-hidden shadow-sm bg-white/[0.005] select-text">
       <div className="px-5 py-3 border-b border-white/5 bg-white/[0.015] flex items-center gap-2 select-none">
-        <AppIcon name="code" size={13} className="text-indigo-400" />
+        <AppIcon name="code" size={13} className="text-orange-400" />
         <span className="text-xs font-bold text-slate-200 tracking-wide font-display">{title || 'Practical Walkthrough'}</span>
       </div>
       <div className="p-5 text-xs text-slate-355 leading-relaxed">
@@ -447,8 +447,8 @@ export function ExampleWalkthrough({ title, content, onSelectCitation, messageSo
 
 export function FormulaCard({ formula, explanation, content }) {
   return (
-    <div className="my-6 p-5 rounded-2xl border border-indigo-500/10 bg-[#08090d]/40 flex flex-col items-center text-center shadow-inner relative select-text">
-      <div className="text-xl font-mono text-indigo-300 py-4 italic tracking-wide break-words max-w-full font-display">
+    <div className="my-6 p-5 rounded-2xl border border-orange-500/10 bg-[#08090d]/40 flex flex-col items-center text-center shadow-inner relative select-text">
+      <div className="text-xl font-mono text-orange-300 py-4 italic tracking-wide break-words max-w-full font-display">
         {formula}
       </div>
       {explanation && (
@@ -526,7 +526,7 @@ export function PracticePromptCard({ question, answer, difficulty = 'medium', co
       {/* Card header */}
       <div className="px-5 py-3.5 bg-white/[0.015] flex items-center justify-between border-b border-white/5 gap-4 select-none">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-6 h-6 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
+          <div className="w-6 h-6 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400 shrink-0">
             <AppIcon name="book" size={11} />
           </div>
           <span className="text-xs font-bold text-slate-100 truncate font-display">{question}</span>
@@ -560,7 +560,7 @@ export function PracticePromptCard({ question, answer, difficulty = 'medium', co
         ) : (
           <button
             onClick={() => setRevealed(true)}
-            className="w-full text-center py-2.5 text-xs font-bold text-indigo-400 hover:text-indigo-300 bg-indigo-500/5 hover:bg-indigo-500/10 border border-indigo-500/10 hover:border-indigo-500/20 rounded-xl transition cursor-pointer select-none"
+            className="w-full text-center py-2.5 text-xs font-bold text-orange-400 hover:text-orange-300 bg-orange-500/5 hover:bg-orange-500/10 border border-orange-500/10 hover:border-orange-500/20 rounded-xl transition cursor-pointer select-none"
           >
             Reveal Model Answer
           </button>
@@ -628,7 +628,7 @@ export function FlashcardsRenderer({ content }) {
         </div>
         <div className="h-1 bg-white/[0.04] border border-white/5 rounded-full overflow-hidden">
           <div
-            className="h-full bg-indigo-500 transition-all duration-300"
+            className="h-full bg-orange-500 transition-all duration-300"
             style={{ width: `${((currentIndex + 1) / cards.length) * 100}%` }}
           />
         </div>
@@ -641,9 +641,9 @@ export function FlashcardsRenderer({ content }) {
       >
         <div className={`w-full h-full duration-500 transform-style-3d relative transition-transform ${flipped ? 'rotate-y-180' : ''}`}>
           {/* FRONT (Question) */}
-          <div className="absolute inset-0 backface-hidden rounded-2xl border border-white/10 bg-white/[0.015] hover:bg-white/[0.025] hover:border-indigo-500/30 p-8 flex flex-col justify-between shadow-lg transition-premium">
+          <div className="absolute inset-0 backface-hidden rounded-2xl border border-white/10 bg-white/[0.015] hover:bg-white/[0.025] hover:border-orange-500/30 p-8 flex flex-col justify-between shadow-lg transition-premium">
             <div className="flex justify-between items-start gap-4">
-              <span className="px-2.5 py-0.5 rounded-full border border-indigo-500/20 text-indigo-400 bg-indigo-500/5 text-[9px] font-bold uppercase tracking-wider">
+              <span className="px-2.5 py-0.5 rounded-full border border-orange-500/20 text-orange-400 bg-orange-500/5 text-[9px] font-bold uppercase tracking-wider">
                 {card.concept || 'Flashcard'}
               </span>
               <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Question</span>
@@ -651,13 +651,13 @@ export function FlashcardsRenderer({ content }) {
             <div className="text-center font-bold text-white text-base md:text-lg leading-snug px-4">
               {card.question}
             </div>
-            <div className="text-center text-[9px] font-extrabold text-indigo-400 uppercase tracking-wider group-hover:scale-105 transition">
+            <div className="text-center text-[9px] font-extrabold text-orange-400 uppercase tracking-wider group-hover:scale-105 transition">
               Click to Flip card
             </div>
           </div>
 
           {/* BACK (Answer) */}
-          <div className="absolute inset-0 backface-hidden rotate-y-180 rounded-2xl border border-indigo-500/25 bg-indigo-950/15 p-8 flex flex-col justify-between shadow-2xl">
+          <div className="absolute inset-0 backface-hidden rotate-y-180 rounded-2xl border border-orange-500/25 bg-orange-950/15 p-8 flex flex-col justify-between shadow-2xl">
             <div className="flex justify-between items-start gap-4">
               {card.sourceCitation && (
                 <span className="inline-flex items-center gap-1.5 text-[9px] font-semibold text-slate-400 bg-white/[0.03] border border-white/6 px-2 py-0.5 rounded-full select-text">
@@ -665,7 +665,7 @@ export function FlashcardsRenderer({ content }) {
                   {card.sourceCitation}
                 </span>
               )}
-              <span className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest">Answer Reveal</span>
+              <span className="text-[9px] font-bold text-orange-400 uppercase tracking-widest">Answer Reveal</span>
             </div>
             <div className="text-center text-slate-200 text-sm md:text-base leading-relaxed px-4 overflow-y-auto max-h-32 scrollbar-thin select-text">
               {card.answer}
@@ -741,7 +741,7 @@ export function FAQRenderer({ blocks, onSelectCitation, messageSources }) {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Filter frequently asked questions..."
-          className="w-full bg-white/[0.01] border border-white/6 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-200 placeholder-slate-550 focus:outline-none focus:border-indigo-500/40 focus:bg-white/[0.025] transition"
+          className="w-full bg-white/[0.01] border border-white/6 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-200 placeholder-slate-550 focus:outline-none focus:border-orange-500/40 focus:bg-white/[0.025] transition"
         />
         <div className="absolute left-3.5 top-3 text-slate-550">
           <AppIcon name="search" size={11} />
@@ -785,9 +785,9 @@ export function TimelineRenderer({ blocks }) {
         {steps.map((step, idx) => (
           <div key={idx} className="flex shrink-0 items-start">
             {/* Step Card */}
-            <div className="w-64 rounded-xl border border-white/6 bg-white/[0.01] hover:border-indigo-500/20 hover:bg-white/[0.02] p-4.5 space-y-2.5 transition relative select-text">
+            <div className="w-64 rounded-xl border border-white/6 bg-white/[0.01] hover:border-orange-500/20 hover:bg-white/[0.02] p-4.5 space-y-2.5 transition relative select-text">
               <div className="flex items-center justify-between gap-2 select-none">
-                <span className="text-[9px] font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/15 px-2 py-0.5 rounded-full">
+                <span className="text-[9px] font-bold text-orange-400 bg-orange-500/10 border border-orange-500/15 px-2 py-0.5 rounded-full">
                   Step {idx + 1}
                 </span>
                 {step.attrs?.citation && (
@@ -806,8 +806,8 @@ export function TimelineRenderer({ blocks }) {
             {/* Connecting Arrow */}
             {idx < steps.length - 1 && (
               <div className="flex items-center justify-center h-full px-2 select-none shrink-0 self-center">
-                <div className="w-6 h-[1.5px] bg-indigo-500/20 relative">
-                  <div className="absolute right-0 top-[-3.5px] w-2 h-2 rounded-full border-r-[1.5px] border-t-[1.5px] border-indigo-500/30 transform rotate-45" />
+                <div className="w-6 h-[1.5px] bg-orange-500/20 relative">
+                  <div className="absolute right-0 top-[-3.5px] w-2 h-2 rounded-full border-r-[1.5px] border-t-[1.5px] border-orange-500/30 transform rotate-45" />
                 </div>
               </div>
             )}
@@ -832,13 +832,13 @@ export function MindMapRenderer({ blocks }) {
     }
 
     const colorClasses = {
-      indigo: 'border-indigo-500/30 bg-indigo-500/5 text-indigo-400',
+      orange: 'border-orange-500/30 bg-orange-500/5 text-orange-400',
       violet: 'border-violet-500/30 bg-violet-500/5 text-violet-400',
       cyan: 'border-cyan-500/30 bg-cyan-500/5 text-cyan-400',
       emerald: 'border-emerald-500/30 bg-emerald-500/5 text-emerald-400',
       amber: 'border-amber-500/30 bg-amber-500/5 text-amber-400',
     };
-    const cClass = colorClasses[node.attrs?.color || 'indigo'] || colorClasses.indigo;
+    const cClass = colorClasses[node.attrs?.color || 'orange'] || colorClasses.orange;
 
     return (
       <div className="pl-6 border-l border-white/5 relative mt-3 select-none">
@@ -846,7 +846,7 @@ export function MindMapRenderer({ blocks }) {
         <div className="absolute left-0 top-3.5 w-4.5 h-[1px] bg-white/5" />
         
         {/* Node Bubble */}
-        <div className="inline-flex flex-col max-w-sm rounded-xl border border-white/6 bg-[#0c0d10] hover:border-indigo-500/15 p-3.5 gap-1 shadow-sm transition">
+        <div className="inline-flex flex-col max-w-sm rounded-xl border border-white/6 bg-[#0c0d10] hover:border-orange-500/15 p-3.5 gap-1 shadow-sm transition">
           <div className="flex items-center gap-2">
             <span className={`px-2 py-0.5 rounded-full border text-[9px] font-bold uppercase tracking-wider ${cClass}`}>
               {node.attrs?.label || 'Node'}
@@ -923,12 +923,12 @@ export function QuizRenderer({ blocks }) {
     <div className="space-y-6 py-2 select-text">
       {/* Score overview header */}
       {totalAttempted > 0 && (
-        <div className="p-4 rounded-xl border border-indigo-500/10 bg-indigo-500/[0.015] flex items-center justify-between select-none animate-in fade-in duration-200">
+        <div className="p-4 rounded-xl border border-orange-500/10 bg-orange-500/[0.015] flex items-center justify-between select-none animate-in fade-in duration-200">
           <div className="flex items-center gap-2">
-            <AppIcon name="trophy" size={14} className="text-indigo-400" />
+            <AppIcon name="trophy" size={14} className="text-orange-400" />
             <span className="text-[11px] font-bold text-slate-200 uppercase tracking-widest">Self-Assessment Grade</span>
           </div>
-          <span className="text-[13px] font-extrabold text-indigo-400">
+          <span className="text-[13px] font-extrabold text-orange-400">
             {score} / {totalAttempted} Correct ({Math.round((score / totalAttempted) * 100)}%)
           </span>
         </div>
@@ -955,7 +955,7 @@ export function QuizRenderer({ blocks }) {
               <div key={idx} className="p-5 border border-white/5 bg-[#0d0e12]/40 rounded-xl space-y-4">
                 <div className="flex justify-between items-start gap-3 select-none">
                   <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Question {idx + 1}</span>
-                  <span className="text-[9px] font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/15 px-2 py-0.5 rounded-full uppercase tracking-wider">Multiple Choice</span>
+                  <span className="text-[9px] font-bold text-orange-400 bg-orange-500/10 border border-orange-500/15 px-2 py-0.5 rounded-full uppercase tracking-wider">Multiple Choice</span>
                 </div>
                 <h5 className="text-[12px] font-bold text-slate-100 leading-snug">{q.attrs?.question}</h5>
 
@@ -974,7 +974,7 @@ export function QuizRenderer({ blocks }) {
                         optStyle = 'border-white/5 bg-white/[0.005] opacity-50 text-slate-400';
                       }
                     } else if (isSelected) {
-                      optStyle = 'border-indigo-500/40 bg-indigo-500/10 text-indigo-400 font-bold';
+                      optStyle = 'border-orange-500/40 bg-orange-500/10 text-orange-400 font-bold';
                     }
 
                     return (
@@ -984,7 +984,7 @@ export function QuizRenderer({ blocks }) {
                         disabled={isSubmitted}
                         className={`text-left px-4 py-2.5 rounded-xl border text-[11px] transition ${optStyle}`}
                       >
-                        <span className="inline-block mr-2 uppercase text-[10px] select-none font-bold text-indigo-400 bg-indigo-500/5 w-4 h-4 rounded border border-indigo-500/15 text-center leading-none align-middle">
+                        <span className="inline-block mr-2 uppercase text-[10px] select-none font-bold text-orange-400 bg-orange-500/5 w-4 h-4 rounded border border-orange-500/15 text-center leading-none align-middle">
                           {opt.key}
                         </span>
                         <span className="align-middle select-text">{opt.val}</span>
@@ -998,7 +998,7 @@ export function QuizRenderer({ blocks }) {
                   <button
                     onClick={() => handleSubmitQuestion(idx, correctOpt)}
                     disabled={!userAns}
-                    className="w-full text-center py-2 text-[10.5px] font-bold text-white bg-indigo-500 hover:bg-indigo-650 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed select-none transition"
+                    className="w-full text-center py-2 text-[10.5px] font-bold text-white bg-orange-500 hover:bg-orange-650 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed select-none transition"
                   >
                     Lock Answer
                   </button>
@@ -1032,7 +1032,7 @@ export function QuizRenderer({ blocks }) {
               <div key={idx} className="p-5 border border-white/5 bg-[#0d0e12]/40 rounded-xl space-y-4">
                 <div className="flex justify-between items-start gap-3 select-none">
                   <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Question {idx + 1}</span>
-                  <span className="text-[9px] font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/15 px-2 py-0.5 rounded-full uppercase tracking-wider">Short Answer</span>
+                  <span className="text-[9px] font-bold text-orange-400 bg-orange-500/10 border border-orange-500/15 px-2 py-0.5 rounded-full uppercase tracking-wider">Short Answer</span>
                 </div>
                 <h5 className="text-[12px] font-bold text-slate-100 leading-snug">{q.attrs?.question}</h5>
 
@@ -1042,14 +1042,14 @@ export function QuizRenderer({ blocks }) {
                   disabled={isSubmitted}
                   rows={3}
                   placeholder="Type your structured answer here..."
-                  className="w-full text-[11px] bg-white/[0.005] border border-white/5 hover:border-white/10 rounded-xl p-3 focus:outline-none focus:border-indigo-500/35 transition leading-relaxed"
+                  className="w-full text-[11px] bg-white/[0.005] border border-white/5 hover:border-white/10 rounded-xl p-3 focus:outline-none focus:border-orange-500/35 transition leading-relaxed"
                 />
 
                 {!isSubmitted && (
                   <button
                     onClick={() => handleSubmitShortAnswer(idx)}
                     disabled={!userAns.trim()}
-                    className="w-full text-center py-2 text-[10.5px] font-bold text-white bg-indigo-500 hover:bg-indigo-650 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed select-none transition"
+                    className="w-full text-center py-2 text-[10.5px] font-bold text-white bg-orange-500 hover:bg-orange-650 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed select-none transition"
                   >
                     Submit Answer for Self-Evaluation
                   </button>
@@ -1063,7 +1063,7 @@ export function QuizRenderer({ blocks }) {
                       <p className="text-[11px] text-slate-350 leading-relaxed">{q.attrs?.rubric}</p>
                     </div>
                     <div className="space-y-1">
-                      <span className="text-[9px] font-extrabold text-indigo-455 uppercase tracking-widest select-none">Model Answer</span>
+                      <span className="text-[9px] font-extrabold text-orange-455 uppercase tracking-widest select-none">Model Answer</span>
                       <p className="text-[11px] text-slate-200 leading-relaxed italic bg-white/[0.015] p-3 rounded-lg border border-white/5">{q.attrs?.modelAnswer}</p>
                     </div>
                     {q.attrs?.citation && (
@@ -1185,3 +1185,4 @@ export default function EducationalContentRenderer({
     </div>
   );
 }
+

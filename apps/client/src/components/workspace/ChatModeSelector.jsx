@@ -7,7 +7,7 @@ const MODES = [
     label: 'Pedagogical Teaching',
     desc: 'Structured step-by-step explanations with progressive depth.',
     icon: 'book',
-    color: 'indigo',
+    color: 'orange',
     badge: 'Popular',
   },
   {
@@ -71,14 +71,14 @@ const MODES = [
     label: 'Expert Critique',
     desc: 'Peer-to-peer depth: trade-offs, performance, production.',
     icon: 'shield',
-    color: 'indigo',
+    color: 'orange',
   },
   {
     id: 'exam_prep',
     label: 'Exam Preparation',
     desc: 'Practice questions, graded answers, and exam strategies.',
     icon: 'graduation',
-    color: 'purple',
+    color: 'amber',
   },
   {
     id: 'beginner',
@@ -90,16 +90,14 @@ const MODES = [
 ];
 
 const COLOR_MAP = {
-  indigo: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20',
+  orange: 'text-orange-400 bg-orange-500/10 border-orange-500/20',
   amber: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
   violet: 'text-violet-400 bg-violet-500/10 border-violet-500/20',
   sky: 'text-sky-400 bg-sky-500/10 border-sky-500/20',
   slate: 'text-slate-400 bg-slate-500/10 border-slate-500/20',
   emerald: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
   rose: 'text-rose-400 bg-rose-500/10 border-rose-500/20',
-  orange: 'text-orange-400 bg-orange-500/10 border-orange-500/20',
   teal: 'text-teal-400 bg-teal-500/10 border-teal-500/20',
-  purple: 'text-purple-400 bg-purple-500/10 border-purple-500/20',
   pink: 'text-pink-400 bg-pink-500/10 border-pink-500/20',
 };
 
@@ -108,7 +106,7 @@ export default function ChatModeSelector({ activeMode, onSelectMode }) {
   const dropdownRef = useRef(null);
 
   const currentMode = MODES.find(m => m.id === activeMode) || MODES[0];
-  const activeColors = COLOR_MAP[currentMode.color] || COLOR_MAP.indigo;
+  const activeColors = COLOR_MAP[currentMode.color] || COLOR_MAP.orange;
 
   useEffect(() => {
     const handleOutsideClick = (e) => {
@@ -159,7 +157,7 @@ export default function ChatModeSelector({ activeMode, onSelectMode }) {
           {/* Mode list */}
           <div className="max-h-72 overflow-y-auto p-2 space-y-0.5 scrollbar-thin">
             {MODES.map((item) => {
-              const colors = COLOR_MAP[item.color] || COLOR_MAP.indigo;
+              const colors = COLOR_MAP[item.color] || COLOR_MAP.orange;
               const isActive = activeMode === item.id;
               return (
                 <button
@@ -187,7 +185,7 @@ export default function ChatModeSelector({ activeMode, onSelectMode }) {
                         {item.label}
                       </span>
                       {item.badge && (
-                        <span className="text-[8px] font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-1.5 py-0.5 rounded-full leading-none">
+                        <span className="text-[8px] font-bold text-orange-400 bg-orange-500/10 border border-orange-500/20 px-1.5 py-0.5 rounded-full leading-none">
                           {item.badge}
                         </span>
                       )}
@@ -199,7 +197,7 @@ export default function ChatModeSelector({ activeMode, onSelectMode }) {
 
                   {/* Active indicator */}
                   {isActive && (
-                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-2 shrink-0" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-orange-400 mt-2 shrink-0" />
                   )}
                 </button>
               );
@@ -210,3 +208,4 @@ export default function ChatModeSelector({ activeMode, onSelectMode }) {
     </div>
   );
 }
+

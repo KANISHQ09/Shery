@@ -78,8 +78,7 @@ Original Query: "${query}"`;
       const candidates = [];
 
       for (const src of activeSources) {
-        if (!src.transcript) continue;
-
+        const transcriptText = src.transcript || `Source: ${src.title || 'Untitled Source'} - No transcript available.`;
         const title = src.title || '';
         const titleLower = title.toLowerCase();
         
@@ -93,7 +92,7 @@ Original Query: "${query}"`;
         // Segment dynamic paragraph blocks (approx 800 chars, 150 overlap)
         const maxLen = 800;
         const overlap = 150;
-        const paragraphs = src.transcript.split(/\n+/).map(p => p.trim()).filter(p => p.length > 10);
+        const paragraphs = transcriptText.split(/\n+/).map(p => p.trim()).filter(p => p.length > 10);
         
         let chunkIndex = 0;
         const textChunks = [];
@@ -193,7 +192,7 @@ Original Query: "${query}"`;
       const diverse = this._enforceSourceDiversity(rrfWrappers, 0.6).map(item => item.payload);
       const results = diverse.slice(0, topK);
 
-      logger.info('Lexical fallback search complete', {
+      logger.info('[PIPELINE] Vectors Retrieved (Lexical Fallback)', {
         workspaceId,
         query: query.substring(0, 80),
         candidateCount: candidates.length,
@@ -320,9 +319,11 @@ Original Query: "${query}"`;
         semanticScore: item.semanticScore,
       }));
 
-      logger.info('Hybrid search LEVEL 1 complete', {
+      logger.info('[PIPELINE] Vectors Retrieved (Hybrid LEVEL 1)', {
         workspaceId,
         query: query.substring(0, 80),
+        candidateCount: semanticResults.length,
+        returnedCount: results.length,
         durationMs: Date.now() - startMs,
       });
 

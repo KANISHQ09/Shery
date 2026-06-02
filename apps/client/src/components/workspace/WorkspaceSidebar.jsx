@@ -11,17 +11,36 @@ export default function WorkspaceSidebar({
   onSelectTab,
   isCollapsed,
   onToggleCollapse,
+  activeWorkspaceSources = [],
 }) {
   const currentWorkspace = workspaces.find((w) => w.id === activeWorkspaceId);
   const sourceLimit = 20;
-  const currentSources = currentWorkspace?.sourceCount || 0;
-  const sourcePercentage = Math.min(Math.round((currentSources / sourceLimit) * 100), 100);
+  const currentSources = activeWorkspaceSources.length > 0 ? activeWorkspaceSources.length : (currentWorkspace?.sourceCount || 0);
+
+  // Calculate real storage used from sources sizes
+  const calculateRealStorage = () => {
+    if (!activeWorkspaceSources || activeWorkspaceSources.length === 0) return 0;
+    let totalBytes = 0;
+    for (const source of activeWorkspaceSources) {
+      if (source.size) totalBytes += source.size;
+      else if (source.meta && source.meta.size) totalBytes += source.meta.size;
+      else if (source.meta && source.meta.fileSize) totalBytes += source.meta.fileSize;
+    }
+    return (totalBytes / (1024 * 1024)).toFixed(1);
+  };
+
+  const realStorageUsed = activeWorkspaceSources && activeWorkspaceSources.length > 0
+    ? calculateRealStorage()
+    : (currentWorkspace?.storageUsed || 0);
+
+  const storageLimitMB = 500;
+  const storagePercentage = Math.min(Math.round((parseFloat(realStorageUsed) / storageLimitMB) * 100), 100);
 
   return (
     <motion.aside
       animate={{ width: isCollapsed ? 64 : 240 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      className="relative flex flex-col h-full border-r border-white/5 bg-[#06070a] select-none shrink-0 z-20"
+      className="relative flex flex-col h-full border-r border-white/5 bg-[#06070a] select-none shrink-0 z-20 min-h-0"
     >
       {/* Sidebar Collapse Toggle Handle */}
       <button
@@ -39,7 +58,7 @@ export default function WorkspaceSidebar({
       {/* Brand & Workspace Branding */}
       <div className="p-4 flex items-center justify-between border-b border-white/5 h-16">
         <Link to="/" className="flex items-center gap-2.5 group overflow-hidden">
-          <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shadow-lg group-hover:scale-105 transition-transform duration-200 shrink-0">
+          <div className="w-8 h-8 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400 shadow-lg group-hover:scale-105 transition-transform duration-200 shrink-0">
             <AppIcon name="brain" size={16} />
           </div>
           {!isCollapsed && (
@@ -47,14 +66,14 @@ export default function WorkspaceSidebar({
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -10 }}
-              className="text-sm font-bold tracking-tight text-slate-100 group-hover:text-indigo-400 transition-colors duration-200"
+              className="text-sm font-bold tracking-tight text-slate-100 group-hover:text-orange-400 transition-colors duration-200"
             >
               SheryAI
             </motion.span>
           )}
         </Link>
         {!isCollapsed && (
-          <span className="text-[9px] uppercase font-bold tracking-widest text-indigo-400 bg-indigo-500/10 border border-indigo-500/15 px-2 py-0.5 rounded-md font-mono">
+          <span className="text-[9px] uppercase font-bold tracking-widest text-orange-400 bg-orange-500/10 border border-orange-500/15 px-2 py-0.5 rounded-md font-mono">
             OS
           </span>
         )}
@@ -73,21 +92,19 @@ export default function WorkspaceSidebar({
               <button
                 key={item.id}
                 onClick={() => onSelectTab(item.id)}
-                className={`relative w-full flex items-center ${
-                  isCollapsed ? 'justify-center' : 'justify-start'
-                } gap-3 px-3 py-2.5 text-xs font-semibold rounded-xl transition duration-200 cursor-pointer ${
-                  isActive ? 'text-indigo-300' : 'text-slate-400 hover:text-slate-200'
-                }`}
+                className={`relative w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-start'
+                  } gap-3 px-3 py-2.5 text-xs font-semibold rounded-xl transition duration-200 cursor-pointer ${isActive ? 'text-orange-300' : 'text-slate-400 hover:text-slate-200'
+                  }`}
                 title={isCollapsed ? item.label : undefined}
               >
                 {isActive && (
                   <motion.div
                     layoutId="activeTabPill"
-                    className="absolute inset-0 bg-indigo-500/10 border border-indigo-500/15 rounded-xl -z-10"
+                    className="absolute inset-0 bg-orange-500/10 border border-orange-500/15 rounded-xl -z-10"
                     transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                   />
                 )}
-                <AppIcon name={item.icon} size={15} className={isActive ? 'text-indigo-400' : ''} />
+                <AppIcon name={item.icon} size={15} className={isActive ? 'text-orange-400' : ''} />
                 {!isCollapsed && (
                   <motion.span
                     initial={{ opacity: 0 }}
@@ -127,32 +144,17 @@ export default function WorkspaceSidebar({
               <button
                 key={ws.id}
                 onClick={() => onSelectWorkspace(ws.id)}
-                className={`w-full flex items-center ${
-                  isCollapsed ? 'justify-center' : 'justify-between'
-                } px-3 py-2.5 rounded-xl text-left transition duration-200 group cursor-pointer ${
-                  isActive
-                    ? 'bg-white/[0.04] text-slate-100 border border-white/5 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.015] border border-transparent'
-                }`}
-                title={ws.name}
+                className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-start'
+                  } gap-2.5 px-3 py-1.5 rounded-md text-left transition duration-200 group cursor-pointer ${isActive
+                    ? 'bg-white/[0.04] text-slate-100'
+                    : 'hover:bg-white/[0.02] text-slate-400 hover:text-slate-200'
+                  }`}
+                title={`${ws.name}\nCreated: ${ws.createdAt ? new Intl.RelativeTimeFormat('en', { numeric: 'auto' }).format(Math.round((new Date(ws.createdAt) - new Date()) / (1000 * 60 * 60 * 24)) || 0, 'day') : 'recently'}\nSources: ${ws.sourceCount || 0}`}
               >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <span className="text-base shrink-0 select-none">{ws.emoji || '🧠'}</span>
-                  {!isCollapsed && (
-                    <span className="text-xs font-semibold truncate text-slate-300 group-hover:text-slate-100">
-                      {ws.name}
-                    </span>
-                  )}
-                </div>
+                <AppIcon name="folder" size={14} className={isActive ? 'text-orange-400' : 'text-slate-500 group-hover:text-orange-400'} />
                 {!isCollapsed && (
-                  <span
-                    className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md transition ${
-                      isActive
-                        ? 'text-indigo-400 bg-indigo-500/10 border border-indigo-500/15'
-                        : 'text-slate-500 bg-white/[0.02] border border-white/5 opacity-60 group-hover:opacity-100'
-                    }`}
-                  >
-                    {ws.sourceCount || 0}
+                  <span className="text-xs font-semibold truncate min-w-0 flex-1 transition">
+                    {ws.name}
                   </span>
                 )}
               </button>
@@ -164,7 +166,7 @@ export default function WorkspaceSidebar({
               <span className="text-[10px] text-slate-500 block mb-3">No workspaces yet</span>
               <button
                 onClick={onNewWorkspace}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/15 rounded-lg hover:bg-indigo-500/20 transition cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold text-orange-400 bg-orange-500/10 border border-orange-500/15 rounded-lg hover:bg-orange-500/20 transition cursor-pointer"
               >
                 <AppIcon name="wrench" size={10} />
                 Create New
@@ -174,22 +176,39 @@ export default function WorkspaceSidebar({
         </div>
       </div>
 
-      {/* Storage and Free Tier Progress */}
+      {/* Workspace Overview Card */}
       {!isCollapsed && activeWorkspaceId && currentWorkspace && (
-        <div className="p-4 border-t border-white/5 bg-black/10 mx-2 mb-2 rounded-2xl border border-white/5">
-          <div className="flex items-center justify-between text-[10px] mb-1.5">
-            <span className="font-semibold text-slate-400">Space Limit</span>
-            <span className="font-bold text-slate-200">
-              {currentSources} / {sourceLimit} files
-            </span>
+        <div className="p-3 bg-white/[0.02] border border-white/5 mx-3 mb-3 rounded-xl flex flex-col gap-2 shrink-0">
+          <div className="flex items-center justify-between text-[10px]">
+            <span className="font-medium text-slate-500">Storage Used</span>
+            <span className="font-semibold text-slate-300">{realStorageUsed} MB / {storageLimitMB} MB</span>
           </div>
+
           <div className="w-full bg-white/[0.04] rounded-full h-1 overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all duration-300 ${
-                sourcePercentage > 85 ? 'bg-rose-500' : 'bg-indigo-500'
-              }`}
-              style={{ width: `${sourcePercentage}%` }}
+              className={`h-full rounded-full transition-all duration-300 ${storagePercentage > 85 ? 'bg-orange-500/80' : 'bg-slate-500/80'
+                }`}
+              style={{ width: `${storagePercentage}%` }}
             />
+          </div>
+
+          <div className="w-full h-px bg-white/5 my-1" />
+
+          <div className="flex items-center justify-between text-[10px]">
+            <span className="font-medium text-slate-500">Sources</span>
+            <span className="font-semibold text-slate-300">{currentSources} / {sourceLimit}</span>
+          </div>
+
+          <div className="flex items-center justify-between text-[10px]">
+            <span className="font-medium text-slate-500">Knowledge Nodes</span>
+            <span className="font-semibold text-slate-300">{currentWorkspace.nodeCount || 0}</span>
+          </div>
+
+          <div className="flex items-center justify-between text-[10px]">
+            <span className="font-medium text-slate-500">Recent Update</span>
+            <span className="font-semibold text-slate-300">
+              {currentWorkspace.updatedAt ? new Intl.RelativeTimeFormat('en', { numeric: 'auto' }).format(Math.round((new Date(currentWorkspace.updatedAt) - new Date()) / (1000 * 60 * 60 * 24)) || 0, 'day') : 'Just now'}
+            </span>
           </div>
         </div>
       )}
@@ -198,9 +217,8 @@ export default function WorkspaceSidebar({
       <div className="p-3 border-t border-white/5 bg-[#040406]/35 flex flex-col gap-2">
         <Link
           to="/"
-          className={`flex items-center ${
-            isCollapsed ? 'justify-center' : 'justify-start'
-          } gap-2 px-2.5 py-2 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-white/[0.02] transition duration-200`}
+          className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-start'
+            } gap-2 px-2.5 py-2 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-white/[0.02] transition duration-200`}
           title="Exit Workspace"
         >
           <AppIcon name="chevronLeft" size={14} />
@@ -213,7 +231,7 @@ export default function WorkspaceSidebar({
               <span className="text-[9px] text-slate-500 truncate">Free Tier</span>
             </div>
           )}
-          <div className="w-7 h-7 rounded-xl bg-indigo-950/40 border border-indigo-500/20 flex items-center justify-center text-[10px] font-bold text-indigo-300 select-none shadow-md shrink-0">
+          <div className="w-7 h-7 rounded-xl bg-orange-950/40 border border-orange-500/20 flex items-center justify-center text-[10px] font-bold text-orange-300 select-none shadow-md shrink-0">
             US
           </div>
         </div>
@@ -221,3 +239,4 @@ export default function WorkspaceSidebar({
     </motion.aside>
   );
 }
+

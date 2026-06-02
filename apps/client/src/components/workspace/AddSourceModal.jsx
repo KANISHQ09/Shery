@@ -105,7 +105,7 @@ export default function AddSourceModal({ isOpen, onClose, onAddSource, workspace
         {/* Modal Header */}
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
-            <AppIcon name="upload" className="text-indigo-400" size={18} />
+            <AppIcon name="upload" className="text-orange-400" size={18} />
             <h3 className="text-sm font-semibold text-slate-200">Add Grounding Material</h3>
           </div>
           <button onClick={onClose} className="text-slate-500 hover:text-slate-350 transition">
@@ -129,7 +129,7 @@ export default function AddSourceModal({ isOpen, onClose, onAddSource, workspace
               }}
               className={`flex-1 pb-3 text-xs font-semibold flex items-center justify-center gap-1.5 border-b-2 transition ${
                 activeTab === tab.id
-                  ? 'border-indigo-500 text-indigo-400'
+                  ? 'border-orange-500 text-orange-400'
                   : 'border-transparent text-slate-500 hover:text-slate-300'
               }`}
             >
@@ -161,14 +161,14 @@ export default function AddSourceModal({ isOpen, onClose, onAddSource, workspace
                 value={youtubeUrl}
                 onChange={(e) => setYoutubeUrl(e.target.value)}
                 placeholder="https://www.youtube.com/watch?v=..."
-                className="w-full bg-white/[0.02] border border-white/5 rounded-xl px-4 py-3 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500/30 focus:bg-white/[0.03] transition"
+                className="w-full bg-white/[0.02] border border-white/5 rounded-xl px-4 py-3 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-orange-500/30 focus:bg-white/[0.03] transition"
               />
             </div>
             <div className="flex justify-end gap-3 pt-2">
               <button
                 type="submit"
                 disabled={isSubmitting || !youtubeUrl.trim()}
-                className="px-4 py-2 text-xs font-bold text-white bg-indigo-650 hover:bg-indigo-600 disabled:bg-white/[0.01] disabled:text-slate-500 rounded-xl flex items-center gap-1.5 shadow-md shadow-indigo-950/50 transition"
+                className="px-4 py-2 text-xs font-bold text-white bg-orange-650 hover:bg-orange-600 disabled:bg-white/[0.01] disabled:text-slate-500 rounded-xl flex items-center gap-1.5 shadow-md shadow-orange-950/50 transition"
               >
                 {isSubmitting ? 'Submitting...' : 'Ingest Video'}
               </button>
@@ -210,7 +210,7 @@ export default function AddSourceModal({ isOpen, onClose, onAddSource, workspace
               <button
                 type="submit"
                 disabled={isSubmitting || !selectedFile}
-                className="px-4 py-2 text-xs font-bold text-white bg-indigo-650 hover:bg-indigo-600 disabled:bg-white/[0.01] disabled:text-slate-500 rounded-xl flex items-center gap-1.5 shadow-md shadow-indigo-950/50 transition"
+                className="px-4 py-2 text-xs font-bold text-white bg-orange-650 hover:bg-orange-600 disabled:bg-white/[0.01] disabled:text-slate-500 rounded-xl flex items-center gap-1.5 shadow-md shadow-orange-950/50 transition"
               >
                 {isSubmitting ? 'Uploading...' : 'Ingest Document'}
               </button>
@@ -233,7 +233,7 @@ export default function AddSourceModal({ isOpen, onClose, onAddSource, workspace
                   value={textTitle}
                   onChange={(e) => setTextTitle(e.target.value)}
                   placeholder="e.g. Chapter 4 Definitions"
-                  className="w-full bg-white/[0.02] border border-white/5 rounded-xl px-4 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500/30 focus:bg-white/[0.03] transition"
+                  className="w-full bg-white/[0.02] border border-white/5 rounded-xl px-4 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-orange-500/30 focus:bg-white/[0.03] transition"
                 />
               </div>
               <div>
@@ -245,7 +245,7 @@ export default function AddSourceModal({ isOpen, onClose, onAddSource, workspace
                   value={text}
                   onChange={(e) => setText(e.target.value)}
                   placeholder="Paste your source text content here..."
-                  className="w-full bg-white/[0.02] border border-white/5 rounded-xl px-4 py-3 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500/30 focus:bg-white/[0.03] transition resize-none"
+                  className="w-full bg-white/[0.02] border border-white/5 rounded-xl px-4 py-3 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-orange-500/30 focus:bg-white/[0.03] transition resize-none"
                 />
               </div>
             </div>
@@ -253,7 +253,7 @@ export default function AddSourceModal({ isOpen, onClose, onAddSource, workspace
               <button
                 type="submit"
                 disabled={isSubmitting || !text.trim() || !textTitle.trim()}
-                className="px-4 py-2 text-xs font-bold text-white bg-indigo-650 hover:bg-indigo-600 disabled:bg-white/[0.01] disabled:text-slate-500 rounded-xl flex items-center gap-1.5 shadow-md shadow-indigo-950/50 transition"
+                className="px-4 py-2 text-xs font-bold text-white bg-orange-650 hover:bg-orange-600 disabled:bg-white/[0.01] disabled:text-slate-500 rounded-xl flex items-center gap-1.5 shadow-md shadow-orange-950/50 transition"
               >
                 {isSubmitting ? 'Submitting...' : 'Ingest Text'}
               </button>
@@ -274,3 +274,4 @@ export default function AddSourceModal({ isOpen, onClose, onAddSource, workspace
     </div>
   );
 }
+

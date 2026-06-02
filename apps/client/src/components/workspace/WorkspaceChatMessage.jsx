@@ -65,7 +65,7 @@ function InlineContent({ text, onSelectCitation, messageSources }) {
             return <em key={i} className="italic text-slate-300">{part.value}</em>;
           case 'code':
             return (
-              <code key={i} className="px-1.5 py-0.5 bg-white/[0.06] border border-white/8 rounded-md text-[11px] font-mono text-indigo-300 mx-0.5">
+              <code key={i} className="px-1.5 py-0.5 bg-white/[0.06] border border-white/8 rounded-md text-[11px] font-mono text-orange-300 mx-0.5">
                 {part.value}
               </code>
             );
@@ -125,7 +125,7 @@ function CodeBlock({ lang, code }) {
             <div className="w-2.5 h-2.5 rounded-full bg-white/10" />
           </div>
           {lang && (
-            <span className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest ml-1">
+            <span className="text-[9px] font-bold text-orange-400 uppercase tracking-widest ml-1">
               {lang}
             </span>
           )}
@@ -185,7 +185,7 @@ function SectionHeading({ level, text, onSelectCitation, messageSources }) {
   if (level === 2) {
     return (
       <div className="mt-5 mb-2 flex items-center gap-2.5">
-        <div className="w-0.5 h-4 bg-indigo-500 rounded-full shrink-0" />
+        <div className="w-0.5 h-4 bg-orange-500 rounded-full shrink-0" />
         <h3 className="text-[13px] font-bold text-slate-100 leading-tight">
           <InlineContent text={text} onSelectCitation={onSelectCitation} messageSources={messageSources} />
         </h3>
@@ -272,7 +272,7 @@ function StandardMarkdownLines({ content, onSelectCitation, messageSources, isSt
         i++;
       }
       elements.push(
-        <blockquote key={`bq-${i}`} className="my-3 pl-4 border-l-2 border-indigo-500/30 text-slate-400 italic text-[11px] leading-relaxed space-y-1">
+        <blockquote key={`bq-${i}`} className="my-3 pl-4 border-l-2 border-orange-500/30 text-slate-400 italic text-[11px] leading-relaxed space-y-1">
           {quoteLines.map((l, li) => (
             <p key={li}>
               <InlineContent text={l} onSelectCitation={onSelectCitation} messageSources={messageSources} />
@@ -305,7 +305,7 @@ function StandardMarkdownLines({ content, onSelectCitation, messageSources, isSt
         <ul key={`ul-${i}`} className="my-2.5 space-y-1.5 pl-1">
           {listItems.map((item, li) => (
             <li key={li} className="flex items-start gap-2.5 text-[12px] text-slate-300 leading-relaxed">
-              <span className="w-1 h-1 rounded-full bg-indigo-400 mt-2 shrink-0" />
+              <span className="w-1 h-1 rounded-full bg-orange-400 mt-2 shrink-0" />
               <span>
                 <InlineContent text={item} onSelectCitation={onSelectCitation} messageSources={messageSources} />
               </span>
@@ -328,7 +328,7 @@ function StandardMarkdownLines({ content, onSelectCitation, messageSources, isSt
         <ol key={`ol-${i}`} className="my-2.5 space-y-1.5 pl-1">
           {listItems.map((item, li) => (
             <li key={li} className="flex items-start gap-3 text-[12px] text-slate-300 leading-relaxed">
-              <span className="text-[10px] font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5">
+              <span className="text-[10px] font-bold text-orange-400 bg-orange-500/10 border border-orange-500/20 w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5">
                 {item.num}
               </span>
               <span className="flex-1">
@@ -360,7 +360,7 @@ function StandardMarkdownLines({ content, onSelectCitation, messageSources, isSt
     <div className="rich-markdown-lines">
       {elements}
       {isStreaming && (
-        <span className="inline-block w-[3px] h-3.5 bg-indigo-400 ml-0.5 animate-pulse rounded-sm align-middle" />
+        <span className="inline-block w-[3px] h-3.5 bg-orange-400 ml-0.5 animate-pulse rounded-sm align-middle" />
       )}
     </div>
   );
@@ -479,7 +479,7 @@ function FollowUpSuggestions({ questions, onSendMessage }) {
           <button
             key={i}
             onClick={() => onSendMessage?.(q)}
-            className="text-[10px] text-slate-400 hover:text-indigo-300 bg-white/[0.02] hover:bg-indigo-500/8 border border-white/8 hover:border-indigo-500/25 rounded-xl px-3 py-1.5 transition-all duration-150 text-left leading-tight max-w-[220px]"
+            className="text-[10px] text-slate-400 hover:text-orange-300 bg-white/[0.02] hover:bg-orange-500/8 border border-white/8 hover:border-orange-500/25 rounded-xl px-3 py-1.5 transition-all duration-150 text-left leading-tight max-w-[220px]"
           >
             {q}
           </button>
@@ -526,7 +526,7 @@ function SourceBibliography({ sources, onSelectCitation }) {
               })}
               className="flex items-center gap-2 bg-white/[0.01] hover:bg-white/[0.04] border border-white/5 hover:border-white/10 rounded-xl px-3 py-1.5 transition-all duration-150 max-w-[180px] min-w-[120px] group"
             >
-              <div className="w-4 h-4 rounded-md bg-white/[0.03] border border-white/8 flex items-center justify-center text-slate-500 group-hover:text-indigo-400 shrink-0 transition">
+              <div className="w-4 h-4 rounded-md bg-white/[0.03] border border-white/8 flex items-center justify-center text-slate-500 group-hover:text-orange-400 shrink-0 transition">
                 <AppIcon name={icon} size={9} />
               </div>
               <div className="min-w-0 flex-1 text-left">
@@ -588,7 +588,7 @@ function TrustPanel({ trustMetrics }) {
                 </div>
                 <div className="h-0.5 bg-white/[0.04] rounded-full overflow-hidden">
                   <div
-                    className={`h-full transition-all duration-500 ${barColor[confidenceLabel] || 'bg-indigo-500'}`}
+                    className={`h-full transition-all duration-500 ${barColor[confidenceLabel] || 'bg-orange-500'}`}
                     style={{ width: `${(value || 0) * 100}%` }}
                   />
                 </div>
@@ -625,8 +625,8 @@ export default function WorkspaceChatMessage({
     <div className={`flex gap-4 ${isUser ? 'justify-end' : 'justify-start'} animate-in fade-in duration-200`}>
       {/* AI Avatar */}
       {!isUser && (
-        <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0 mt-1.5 relative overflow-hidden shadow-sm">
-          <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/15 to-transparent" />
+        <div className="w-8 h-8 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-400 flex items-center justify-center shrink-0 mt-1.5 relative overflow-hidden shadow-sm">
+          <div className="absolute inset-0 bg-gradient-to-br from-orange-500/15 to-transparent" />
           <AppIcon name="bot" size={13} className="relative z-10" />
         </div>
       )}
@@ -682,3 +682,4 @@ export default function WorkspaceChatMessage({
     </div>
   );
 }
+
