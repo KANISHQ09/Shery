@@ -17,6 +17,8 @@ const EMPTY_STATE_SUGGESTIONS = [
   'Compare the different approaches mentioned.',
 ];
 
+
+
 export default function ChatPanel({
   messages = [],
   isStreaming,
@@ -25,6 +27,8 @@ export default function ChatPanel({
   error,
   mode,
   onSelectMode,
+  depth,
+  onSelectDepth,
   onSendMessage,
   onStopStreaming,
   onClearSession,
@@ -356,10 +360,6 @@ export default function ChatPanel({
             </div>
           </form>
 
-          <div className="flex items-center justify-between mt-3 px-2 text-[10px] text-slate-500 font-medium select-none">
-            <span>↵ Send · Shift+↵ New line</span>
-            <span>Grounded strictly from your sources</span>
-          </div>
         </div>
       </div>
     </div>

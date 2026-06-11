@@ -1,5 +1,6 @@
 import logger from '../../loggers/logger.js';
-import { buildSystemPrompt, buildGroundingPrompt, buildFollowUpPrompt } from '../../lib/prompt/workspace-chat.js';
+import { buildAdaptiveSystemPrompt, buildGroundingPrompt, buildFollowUpPrompt } from '../../lib/prompt/workspace-chat.js';
+import { classifyIntent } from '../../lib/prompt/questionAnalyzer.js';
 
 class WorkspaceChatService {
   constructor({
@@ -7,7 +8,7 @@ class WorkspaceChatService {
     contextManagerService,
     workspaceMemoryService,
     workspaceChatRepository,
-    geminiFlash,
+    chatProvider,
     retrievalEvaluationService,
     workspaceSourceRepository,
   }) {
@@ -15,7 +16,7 @@ class WorkspaceChatService {
     this.contextManager = contextManagerService;
     this.workspaceMemory = workspaceMemoryService;
     this.chatRepo = workspaceChatRepository;
-    this.geminiFlash = geminiFlash;
+    this.chatProvider = chatProvider;
     this.retrievalEvaluation = retrievalEvaluationService;
     this.sourceRepo = workspaceSourceRepository;
   }
@@ -32,20 +33,24 @@ class WorkspaceChatService {
    * Generate contextual follow-up questions after a response.
    * Falls back gracefully to empty array if generation fails.
    */
-  async generateFollowUpQuestions(query, response, mode) {
-    if (!this.geminiFlash) return [];
+  async generateFollowUpQuestions(query, response, mode, intent = 'concept_understanding', learningLevel = 'intermediate') {
+    if (!this.chatProvider) return [];
     try {
-      const prompt = buildFollowUpPrompt(query, response, mode);
-      const result = await this.geminiFlash.generateContent({
+      const prompt = buildFollowUpPrompt(query, response, mode, intent, learningLevel);
+      const result = await this.chatProvider.generateContent({
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.5, maxOutputTokens: 200 },
+        generationConfig: { temperature: 0.5, maxOutputTokens: 400 },
       });
       const text = result.response?.text?.()?.trim() || '';
       const jsonMatch = text.match(/\[[\s\S]*\]/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
         if (Array.isArray(parsed)) {
-          return parsed.filter(q => typeof q === 'string' && q.length > 5).slice(0, 4);
+          // Support both legacy string arrays and new object arrays
+          return parsed
+            .filter(q => (typeof q === 'string' && q.length > 5) || (typeof q === 'object' && q?.question))
+            .slice(0, 4)
+            .map(q => typeof q === 'string' ? { question: q, reason: 'Explore further', type: 'deeper' } : q);
         }
       }
     } catch (err) {
@@ -59,7 +64,7 @@ class WorkspaceChatService {
    * This ensures the model TEACHES rather than dumps transcript text.
    */
   async buildAnswerPlan(query, contextText, mode) {
-    if (!this.geminiFlash) return null;
+    if (!this.chatProvider) return null;
     try {
       const prompt = `You are a pedagogical planner. Given this user question and some source material, 
 create a brief teaching plan (3-5 bullets) that outlines how to explain this topic clearly and progressively.
@@ -69,7 +74,7 @@ Question: "${query}"
 Mode: ${mode}
 Context excerpt: "${contextText.substring(0, 800)}..."`;
 
-      const result = await this.geminiFlash.generateContent({
+      const result = await this.chatProvider.generateContent({
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         generationConfig: { temperature: 0.2, maxOutputTokens: 150 },
       });
@@ -79,35 +84,56 @@ Context excerpt: "${contextText.substring(0, 800)}..."`;
     }
   }
 
-  async *streamChat({ workspaceId, message, chatId, mode = 'explain', history = [], signal }) {
+  async *streamChat({ workspaceId, message, chatId, mode = 'explain', depth = 'detailed', history = [], signal }) {
+    let matchedChunks = [];
+    let isFallbackUsed = false;
     try {
       logger.info('Workspace stream chat initiated', { workspaceId, chatId, mode });
 
-      let matchedChunks = [];
-      let isFallbackUsed = false;
+      const sources = await this.sourceRepo.findByWorkspace(workspaceId);
+      const activeStatuses = [
+        'ready', 'completed', 'partially_ready', 'transcript_ready',
+        'vector_ready', 'graph_ready', 'ready_without_vectors',
+        'indexing_pending', 'indexing_retrying', 'fully_indexed',
+      ];
+      const activeSources = sources ? sources.filter(s => activeStatuses.includes(s.status)) : [];
+      if (activeSources.length === 0) {
+        yield {
+          type: 'error',
+          message: "No source material available in this workspace."
+        };
+        return;
+      }
 
-      try {
-        // Step 1: Hybrid retrieval across workspace chunks
-        matchedChunks = await this.vectorSearch.hybridSearch(workspaceId, message, { topK: 15 });
-      } catch (err) {
-        logger.warn('Hybrid search failed or timed out. Falling back to local keyword matching.', {
-          workspaceId,
-          error: err.message,
-        });
+      const { providerHealthStatus } = await import('../../config/providerStatusState.js');
+      const isDegradedMode = providerHealthStatus.searchMode === 'degraded';
+      if (isDegradedMode) {
+        logger.warn("Qdrant unavailable, entering degraded retrieval mode");
+      }
+
+
+
+      if (isDegradedMode) {
+        logger.info('Retrieval degraded: bypassing hybrid search and running layered fallbacks directly.');
+        isFallbackUsed = true;
+        matchedChunks = await this.vectorSearch.runLayeredFallbacks(workspaceId, message, 15);
+      } else {
+        try {
+          // Step 1: Hybrid retrieval across workspace chunks
+          matchedChunks = await this.vectorSearch.hybridSearch(workspaceId, message, { topK: 15 });
+        } catch (err) {
+          logger.warn('Hybrid search failed or timed out. Falling back to local keyword matching.', {
+            workspaceId,
+            error: err.message,
+          });
+          isFallbackUsed = true;
+        }
       }
 
       // If hybrid search returned nothing, trigger BM25 text fallback
       if (!matchedChunks || matchedChunks.length === 0) {
         logger.info('Performing BM25 text fallback for workspace chat', { workspaceId });
         isFallbackUsed = true;
-
-        const sources = await this.sourceRepo.findByWorkspace(workspaceId);
-        const activeStatuses = [
-          'ready', 'completed', 'partially_ready', 'transcript_ready',
-          'vector_ready', 'graph_ready', 'ready_without_vectors',
-          'indexing_pending', 'indexing_retrying', 'fully_indexed',
-        ];
-        const activeSources = sources.filter(s => activeStatuses.includes(s.status));
 
         const textChunks = [];
         for (const src of activeSources) {
@@ -161,15 +187,31 @@ Context excerpt: "${contextText.substring(0, 800)}..."`;
         return;
       }
 
+      console.log('STREAM STEP 2: Retrieval complete');
+      logger.info('STREAM STEP 2: Retrieval complete');
+
       // Step 2: Context window assembly
       const { contextText, sourcesUsed } = await this.contextManager.assembleContext(
         matchedChunks,
         message,
         { maxTokens: 3000, diversityWeight: 0.5 }
       );
+      console.log('STREAM STEP 3: Context assembled');
+      logger.info('STREAM STEP 3: Context assembled');
 
       // Step 3: Workspace memory context
       const memoryContext = await this.workspaceMemory.getAdaptivePromptContext(workspaceId);
+
+      // Step 3.5: Question intent classification (synchronous, no I/O)
+      const questionAnalysis = classifyIntent(message, history);
+      const { intent, learningLevel } = questionAnalysis;
+
+      logger.info('[PIPELINE] Question classified', {
+        workspaceId,
+        intent,
+        learningLevel,
+        topicKeywords: questionAnalysis.topicKeywords,
+      });
 
       // Step 4: Answer planning (non-blocking, parallel with context assembly)
       let answerPlan = null;
@@ -177,8 +219,32 @@ Context excerpt: "${contextText.substring(0, 800)}..."`;
         answerPlan = await this.buildAnswerPlan(message, contextText, mode);
       } catch { /* non-fatal */ }
 
-      // Step 5: System and Grounding prompts
-      const systemInstruction = buildSystemPrompt(mode, memoryContext);
+      // V3: Load concept graph to check for prerequisite warnings
+      const learningGraph = await this.workspaceMemory.getOrCreateLearningGraph(workspaceId);
+      let prerequisiteWarning = '';
+      if (learningGraph && learningGraph.length > 0) {
+        const queryLower = message.toLowerCase();
+        for (const node of learningGraph) {
+          const conceptLower = node.concept.toLowerCase();
+          const isMentioned = queryLower.includes(conceptLower) || 
+                              node.relatedConcepts?.some(rc => queryLower.includes(rc.toLowerCase()));
+          
+          if (isMentioned && node.prerequisites?.length > 0) {
+            for (const prereqName of node.prerequisites) {
+              const prereqNode = learningGraph.find(n => n.concept.toLowerCase() === prereqName.toLowerCase());
+              const score = prereqNode ? prereqNode.masteryScore : 0;
+              if (score < 40) {
+                prerequisiteWarning = `⚠️ Prerequisite warning: You are asking about ${node.concept}, but haven't covered ${prereqName} yet. Check out [${prereqName}] first!`;
+                break;
+              }
+            }
+          }
+          if (prerequisiteWarning) break;
+        }
+      }
+
+      // Step 5: Adaptive system and Grounding prompts
+      const systemInstruction = buildAdaptiveSystemPrompt(mode, intent, learningLevel, memoryContext, sourcesUsed, depth);
       const groundingUserPrompt = buildGroundingPrompt(contextText, sourcesUsed);
 
       const planSection = answerPlan
@@ -193,8 +259,11 @@ Context excerpt: "${contextText.substring(0, 800)}..."`;
       logger.info('[PIPELINE] Context Length', { workspaceId, contextTokens: Math.round(contextText.length / 4) });
       logger.info('[PIPELINE] Model Response Started', { workspaceId });
 
+      console.log('STREAM STEP 4: NVIDIA generation started');
+      logger.info('STREAM STEP 4: NVIDIA generation started');
+
       // Step 7: Execute Gemini streaming
-      const streamResult = await this.geminiFlash.generateContentStream({
+      const streamResult = await this.chatProvider.generateContentStream({
         systemInstruction,
         contents: [
           ...this.formatHistory(history),
@@ -207,9 +276,21 @@ Context excerpt: "${contextText.substring(0, 800)}..."`;
       });
 
       let fullResponse = '';
+      if (prerequisiteWarning) {
+        const warningToken = `<!--PREREQUISITE_WARNING:${prerequisiteWarning}-->\n`;
+        fullResponse += warningToken;
+        yield { type: 'token', content: warningToken };
+      }
+
+      let firstTokenReceived = false;
       for await (const chunk of streamResult.stream) {
         const text = chunk.text();
         if (!text) continue;
+        if (!firstTokenReceived) {
+          firstTokenReceived = true;
+          console.log('STREAM STEP 5: First token received');
+          logger.info('STREAM STEP 5: First token received');
+        }
         fullResponse += text;
         yield { type: 'token', content: text };
       }
@@ -219,7 +300,7 @@ Context excerpt: "${contextText.substring(0, 800)}..."`;
       // Step 8: Generate follow-up questions (async, non-blocking)
       let followUpQuestions = [];
       try {
-        followUpQuestions = await this.generateFollowUpQuestions(message, fullResponse, mode);
+        followUpQuestions = await this.generateFollowUpQuestions(message, fullResponse, mode, intent, learningLevel);
         if (followUpQuestions.length > 0) {
           yield { type: 'followUp', questions: followUpQuestions };
         }
@@ -241,6 +322,13 @@ Context excerpt: "${contextText.substring(0, 800)}..."`;
         content: message,
         createdAt: new Date().toISOString(),
       };
+      
+      const resolvedProvider = this.chatProvider?.status?.().provider || 'nvidia';
+      const resolvedModel = this.chatProvider?.status?.().model || 'meta/llama-3.3-70b-instruct';
+      const retrievalMode = (isFallbackUsed || isDegradedMode) ? 'fallback' : 'vector';
+
+      logger.info(`Workspace response generated successfully. Retrieval mode: ${retrievalMode}, Provider: ${resolvedProvider}, Model: ${resolvedModel}`);
+
       const assistantMessage = {
         role: 'assistant',
         content: fullResponse,
@@ -248,18 +336,38 @@ Context excerpt: "${contextText.substring(0, 800)}..."`;
         trustMetrics,
         followUpQuestions,
         mode,
+        questionIntent: intent,
+        learningLevel,
+        retrievalMode,
         createdAt: new Date().toISOString(),
       };
 
       await this.chatRepo.appendMessage(workspaceId, chatId, userMessage);
       await this.chatRepo.appendMessage(workspaceId, chatId, assistantMessage);
 
-      yield { type: 'done', fullResponse, sourcesUsed, trustMetrics, followUpQuestions };
+      yield { type: 'done', fullResponse, sourcesUsed, trustMetrics, followUpQuestions, questionIntent: intent, learningLevel, retrievalMode };
+      console.log('STREAM STEP 9: Stream completed');
+      logger.info('STREAM STEP 9: Stream completed');
     } catch (error) {
-      logger.error('Workspace streaming chat failed', { error: error.message, workspaceId, chatId });
+      logger.error('Workspace streaming chat failed', {
+        message: error.message,
+        stack: error.stack,
+        workspaceId,
+        chatId,
+        providerResponse: error.response?.data || error.response || error.data || null,
+        retrievalStats: {
+          matchedChunksCount: matchedChunks?.length || 0,
+          isFallbackUsed
+        }
+      });
       yield {
         type: 'error',
-        message: 'An AI processing error occurred. Please verify your query or try again later.',
+        message: `An AI processing error occurred: ${error.message}`,
+        details: {
+          stack: error.stack,
+          providerResponse: error.response?.data || error.response || error.data || null,
+          matchedChunksCount: matchedChunks?.length || 0
+        }
       };
     }
   }

@@ -14,6 +14,10 @@ import AddSourceModal from '../components/workspace/AddSourceModal';
 import GlobalSearchModal from '../components/workspace/GlobalSearchModal';
 import SourcePreviewDrawer from '../components/workspace/SourcePreviewDrawer';
 import OutputViewer from '../components/workspace/OutputViewer';
+import VisualGeneratorModal from '../components/workspace/VisualGeneratorModal';
+import PresentationGeneratorModal from '../components/workspace/PresentationGeneratorModal';
+import PresentationOutlineEditor from '../components/workspace/PresentationOutlineEditor';
+import AudioGeneratorModal from '../components/workspace/AudioGeneratorModal';
 
 // React Query hooks
 import {
@@ -30,6 +34,12 @@ import {
   useWorkspaceMemoryQuery,
   useWorkspaceLearningQuery,
   useWorkspaceCoverageQuery,
+  useGenerateVisualMutation,
+  useGenerateOutlineMutation,
+  useCompilePresentationMutation,
+  useDuplicateArtifactMutation,
+  useRenameArtifactMutation,
+  useGenerateAudioMutation,
 } from '../api/workspaceQueries';
 
 // Shared hooks
@@ -97,6 +107,14 @@ export default function KnowledgeWorkspacePage() {
   const [selectedCitation, setSelectedCitation] = useState(null);
   const [selectedOutput, setSelectedOutput] = useState(null);
 
+  // V4 Generative Assets state
+  const [visualModalOpen, setVisualModalOpen] = useState(false);
+  const [presentationModalOpen, setPresentationModalOpen] = useState(false);
+  const [audioModalOpen, setAudioModalOpen] = useState(false);
+  const [editingOutline, setEditingOutline] = useState(null);
+  const [editingOutlineTheme, setEditingOutlineTheme] = useState('Professional');
+  const [outlineGenerationPrompt, setOutlineGenerationPrompt] = useState('');
+
   // Queries
   const { data: workspacesRes, isLoading: spacesLoading } = useWorkspacesQuery(userId, {
     enabled: Boolean(userId),
@@ -104,8 +122,13 @@ export default function KnowledgeWorkspacePage() {
 
   const workspaces = workspacesRes?.list || [];
 
-  const { data: workspaceDetailRes, isLoading: workspaceLoading } = useWorkspaceQuery(workspaceId, {
+  const { data: workspaceDetailRes, isLoading: workspaceLoading, refetch: refetchWorkspace } = useWorkspaceQuery(workspaceId, {
     enabled: Boolean(workspaceId),
+    refetchInterval: (data) => {
+      const outputs = data?.outputs || [];
+      const hasGenerating = outputs.some(out => out.status === 'generating');
+      return hasGenerating ? 2000 : false;
+    }
   });
 
   const workspace = workspaceDetailRes?.workspace;
@@ -139,6 +162,12 @@ export default function KnowledgeWorkspacePage() {
   const deleteSourceMutation = useDeleteSourceMutation(workspaceId);
   const generateOutputMutation = useGenerateOutputMutation(workspaceId);
   const deleteOutputMutation = useDeleteOutputMutation(workspaceId);
+  const generateVisualMutation = useGenerateVisualMutation(workspaceId);
+  const generateOutlineMutation = useGenerateOutlineMutation(workspaceId);
+  const compilePresentationMutation = useCompilePresentationMutation(workspaceId);
+  const duplicateArtifactMutation = useDuplicateArtifactMutation(workspaceId);
+  const renameArtifactMutation = useRenameArtifactMutation(workspaceId);
+  const generateAudioMutation = useGenerateAudioMutation(workspaceId);
 
   // Streaming chat hook
   const chatStream = useWorkspaceChat(workspaceId);
@@ -283,6 +312,63 @@ export default function KnowledgeWorkspacePage() {
     });
   };
 
+  const handleOpenVisualModal = () => {
+    setVisualModalOpen(true);
+  };
+
+  const handleOpenPresentationModal = () => {
+    setPresentationModalOpen(true);
+  };
+
+  const handleOpenAudioModal = () => {
+    setAudioModalOpen(true);
+  };
+
+  const handleGenerateVisual = async (data) => {
+    const newOutput = await generateVisualMutation.mutateAsync(data);
+    if (newOutput) {
+      setSelectedOutput(newOutput);
+    }
+  };
+
+  const handleGenerateAudio = async (data) => {
+    const newOutput = await generateAudioMutation.mutateAsync(data);
+    if (newOutput) {
+      setSelectedOutput(newOutput);
+    }
+  };
+
+  const handleGenerateOutline = async (data) => {
+    const res = await generateOutlineMutation.mutateAsync(data);
+    if (res?.slides) {
+      setEditingOutline(res.slides);
+      setEditingOutlineTheme(data.theme || 'Professional');
+      setOutlineGenerationPrompt(data.prompt);
+      setPresentationModalOpen(false);
+    }
+  };
+
+  const handleCompilePresentation = async (slides, theme) => {
+    const newOutput = await compilePresentationMutation.mutateAsync({
+      outline: slides,
+      theme,
+      title: `Presentation: ${theme}`,
+      prompt: outlineGenerationPrompt,
+    });
+    if (newOutput) {
+      setSelectedOutput(newOutput);
+      setEditingOutline(null);
+    }
+  };
+
+  const handleDuplicateOutput = async (oid) => {
+    await duplicateArtifactMutation.mutateAsync(oid);
+  };
+
+  const handleRenameOutput = async (oid, title) => {
+    await renameArtifactMutation.mutateAsync({ oid, title });
+  };
+
   return (
     <div
       onDragOver={handleDragOver}
@@ -361,7 +447,14 @@ export default function KnowledgeWorkspacePage() {
 
                 {/* Center Content Workspace Container */}
                 <div className="flex-1 flex flex-col min-w-0 min-h-0 h-full overflow-hidden">
-                  {activeTab === 'chat' && (
+                  {editingOutline ? (
+                    <PresentationOutlineEditor
+                      outline={editingOutline}
+                      theme={editingOutlineTheme}
+                      onCompile={handleCompilePresentation}
+                      onCancel={() => setEditingOutline(null)}
+                    />
+                  ) : (
                     <ChatPanel
                       messages={chatStream.messages}
                       isStreaming={chatStream.isStreaming}
@@ -370,6 +463,8 @@ export default function KnowledgeWorkspacePage() {
                       error={chatStream.error}
                       mode={chatStream.mode}
                       onSelectMode={chatStream.setMode}
+                      depth={chatStream.depth}
+                      onSelectDepth={chatStream.setDepth}
                       onSendMessage={chatStream.sendMessage}
                       onStopStreaming={chatStream.stopStreaming}
                       onClearSession={chatStream.clearSession}
@@ -379,66 +474,50 @@ export default function KnowledgeWorkspacePage() {
                       onSelectOutput={setSelectedOutput}
                     />
                   )}
-
-                  {activeTab === 'studio' && (
-                    <StudioWorkbench
-                      outputs={outputs}
-                      isGenerating={generateOutputMutation.isPending}
-                      onSelectOutput={setSelectedOutput}
-                      onDeleteOutput={handleDeleteOutput}
-                    />
-                  )}
-
-                  {activeTab === 'dashboard' && (
-                    <KnowledgeDashboard
-                      metrics={metricsRes}
-                      memory={memoryRes}
-                      graph={graphRes}
-                      learning={learningRes}
-                      coverage={coverageRes}
-                      onGenerateStudyGuide={() => handleGenerateOutput({ type: 'study_guide' })}
-                    />
-                  )}
                 </div>
 
-                {/* Right Studio Panel (Visible in chat and studio tabs) */}
-                {(activeTab === 'chat' || activeTab === 'studio') && (
-                  <div className="flex shrink-0 h-full relative z-10">
-                    {/* Collapsible toggle handle button */}
-                    <button
-                      onClick={handleToggleStudio}
-                      className="absolute left-[-12px] top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-[#0b0c10] border border-white/10 flex items-center justify-center text-slate-400 hover:text-slate-200 shadow-md hover:scale-110 cursor-pointer z-30 transition-all duration-200"
-                      title={isRightPanelCollapsed ? 'Expand Studio Panel' : 'Collapse Studio Panel'}
-                    >
-                      <AppIcon
-                        name="chevronLeft"
-                        size={12}
-                        className={`transform transition-transform duration-300 ${isRightPanelCollapsed ? '' : 'rotate-180'}`}
-                      />
-                    </button>
+                {/* Right Studio Panel */}
+                <div className="flex shrink-0 h-full relative z-10">
+                  {/* Collapsible toggle handle button */}
+                  <button
+                    onClick={handleToggleStudio}
+                    className="absolute left-[-12px] top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-[#0b0c10] border border-white/10 flex items-center justify-center text-slate-400 hover:text-slate-200 shadow-md hover:scale-110 cursor-pointer z-30 transition-all duration-200"
+                    title={isRightPanelCollapsed ? 'Expand Studio Panel' : 'Collapse Studio Panel'}
+                  >
+                    <AppIcon
+                      name="chevronLeft"
+                      size={12}
+                      className={`transform transition-transform duration-300 ${isRightPanelCollapsed ? '' : 'rotate-180'}`}
+                    />
+                  </button>
 
-                    {/* Sliding wrapper */}
-                    <div
-                      style={{
-                        width: isRightPanelCollapsed ? '0px' : '320px',
-                        minWidth: isRightPanelCollapsed ? '0px' : '320px',
-                        maxWidth: isRightPanelCollapsed ? '0px' : '320px',
-                        opacity: isRightPanelCollapsed ? 0 : 1,
-                        transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
-                      }}
-                      className="h-full overflow-hidden flex shrink-0"
-                    >
-                      <StudioPanel
-                        outputs={outputs}
-                        activeOutputId={selectedOutput?.id}
-                        isGenerating={generateOutputMutation.isPending}
-                        onGenerate={handleGenerateOutput}
-                        onSelectOutput={setSelectedOutput}
-                        onDeleteOutput={handleDeleteOutput}
-                      />
-                    </div>
+                  {/* Sliding wrapper */}
+                  <div
+                    style={{
+                      width: isRightPanelCollapsed ? '0px' : '320px',
+                      minWidth: isRightPanelCollapsed ? '0px' : '320px',
+                      maxWidth: isRightPanelCollapsed ? '0px' : '320px',
+                      opacity: isRightPanelCollapsed ? 0 : 1,
+                      transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+                    }}
+                    className="h-full overflow-hidden flex shrink-0"
+                  >
+                    <StudioPanel
+                      outputs={outputs}
+                      activeOutputId={selectedOutput?.id}
+                      isGenerating={generateOutputMutation.isPending || generateVisualMutation.isPending || compilePresentationMutation.isPending || generateAudioMutation.isPending}
+                      onGenerate={handleGenerateOutput}
+                      onSelectOutput={setSelectedOutput}
+                      onDeleteOutput={handleDeleteOutput}
+                      onDuplicateOutput={handleDuplicateOutput}
+                      onRenameOutput={handleRenameOutput}
+                      onViewVersions={setSelectedOutput}
+                      onOpenVisualModal={handleOpenVisualModal}
+                      onOpenPresentationModal={handleOpenPresentationModal}
+                      onOpenAudioModal={handleOpenAudioModal}
+                    />
                   </div>
-                )}
+                </div>
               </div>
             )}
           </>
@@ -490,9 +569,36 @@ export default function KnowledgeWorkspacePage() {
         <OutputViewer
           isOpen={Boolean(selectedOutput)}
           onClose={() => setSelectedOutput(null)}
-          output={selectedOutput}
+          output={outputs.find(o => o.id === selectedOutput?.id) || selectedOutput}
+          workspaceId={workspaceId}
+          onSelectOutput={setSelectedOutput}
+          refetchWorkspace={refetchWorkspace}
         />
       )}
+
+      {/* Visual Generator Modal */}
+      <VisualGeneratorModal
+        isOpen={visualModalOpen}
+        onClose={() => setVisualModalOpen(false)}
+        onGenerate={handleGenerateVisual}
+        sources={sources}
+      />
+
+      {/* Presentation Generator Modal */}
+      <PresentationGeneratorModal
+        isOpen={presentationModalOpen}
+        onClose={() => setPresentationModalOpen(false)}
+        onGenerateOutline={handleGenerateOutline}
+        sources={sources}
+      />
+
+      {/* Audio Generator Modal */}
+      <AudioGeneratorModal
+        isOpen={audioModalOpen}
+        onClose={() => setAudioModalOpen(false)}
+        onGenerate={handleGenerateAudio}
+        sources={sources}
+      />
 
       {/* Drop overlay for PDF documents upload */}
       {isDraggingFile && (

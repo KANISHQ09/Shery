@@ -2,7 +2,7 @@ import fs from 'fs';
 import logger from '../loggers/logger.js';
 
 class LessonIngestionService {
-  constructor({ lessonRepository, transcriptService, chunkingService, chunkRepository, aiMetadataService, chunkCacheService, videoStorageService }) {
+  constructor({ lessonRepository, transcriptService, chunkingService, chunkRepository, aiMetadataService, chunkCacheService, videoStorageService, embeddingService }) {
     this.lessonRepository = lessonRepository;
     this.transcriptService = transcriptService;
     this.chunkingService = chunkingService;
@@ -10,6 +10,7 @@ class LessonIngestionService {
     this.aiMetadataService = aiMetadataService;
     this.chunkCacheService = chunkCacheService;
     this.videoStorageService = videoStorageService;
+    this.embeddingService = embeddingService;
   }
 
   async updateLessonStatus(lessonId, fields) {
@@ -34,6 +35,26 @@ class LessonIngestionService {
     await this.chunkRepository.saveMany(lessonId, chunks, (savedCount) => (
       this.lessonRepository.updateById(lessonId, { chunkCount: savedCount })
     ));
+
+    if (this.embeddingService) {
+      try {
+        const lesson = await this.lessonRepository.findById(lessonId);
+        const courseId = lesson?.courseId || 'default-course';
+        
+        const formattedChunks = chunks.map(c => ({
+          ...c,
+          sourceId: lessonId,
+          sourceTitle: title || lesson?.title || 'Lesson Video',
+          sourceType: 'video',
+          priorityTier: 2,
+        }));
+
+        await this.embeddingService.indexChunks(courseId, lessonId, formattedChunks);
+        logger.info('Lesson chunks indexed in Qdrant successfully', { lessonId, courseId });
+      } catch (embedErr) {
+        logger.error('Failed to index lesson chunks in Qdrant (non-fatal)', { lessonId, error: embedErr.message });
+      }
+    }
 
     await this.safeProgress(lessonId, 'processing', metadataProgress);
     const [starterQuestions, topicSegments] = await Promise.all([

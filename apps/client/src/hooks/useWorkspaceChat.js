@@ -9,6 +9,7 @@ export function useWorkspaceChat(workspaceId) {
   const [sources, setSources] = useState([]);
   const [error, setError] = useState(null);
   const [mode, setMode] = useState('explain');
+  const [depth, setDepth] = useState('detailed');
   const [activeChatId, setActiveChatId] = useState(null);
 
   const abortRef = useRef(null);
@@ -38,6 +39,7 @@ export function useWorkspaceChat(workspaceId) {
           message: text.trim(),
           chatId: chatId || activeChatId,
           mode,
+          depth,
         }),
         signal: controller.signal,
       });
@@ -79,6 +81,7 @@ export function useWorkspaceChat(workspaceId) {
             const event = JSON.parse(trimmed.slice(6));
 
             if (event.type === 'token') {
+              console.log('STREAM STEP 7: Frontend received token');
               fullText += event.content;
               setCurrentStreamText(prev => prev + event.content);
             } else if (event.type === 'sources') {
@@ -100,6 +103,7 @@ export function useWorkspaceChat(workspaceId) {
                 receivedFollowUpQuestions = event.followUpQuestions;
               }
 
+              console.log('STREAM STEP 8: Message appended');
               setMessages(prev => [...prev, {
                 role: 'assistant',
                 content: fullText || event.fullResponse || '',
@@ -165,6 +169,8 @@ export function useWorkspaceChat(workspaceId) {
     clearSession,
     mode,
     setMode,
+    depth,
+    setDepth,
     activeChatId,
     setActiveChatId,
   };

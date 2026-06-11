@@ -50,6 +50,17 @@ async function storeVideoFile(workspaceId, sourceId, file) {
   });
 }
 
+
+// Hidden diagnostics health panel route
+router.get('/health', async (req, res, next) => {
+  try {
+    const { providerHealthStatus } = await import('../config/providerStatusState.js');
+    res.json(providerHealthStatus);
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Apply global Workspace User Identification header check to all routes
 router.use(getWorkspaceUser);
 
@@ -449,8 +460,10 @@ router.delete('/:wid/sources/:sid', workspaceApiLimiter, requireWorkspaceOwnersh
 // 10. Streaming SSE chat
 router.post('/:wid/chat', workspaceChatLimiter, requireWorkspaceOwnership, async (req, res, next) => {
   try {
+    console.log('STREAM STEP 1: Request received');
+    logger.info('STREAM STEP 1: Request received');
     const wid = req.params.wid;
-    const { message, chatId, mode } = req.body;
+    const { message, chatId, mode, depth } = req.body;
 
     if (!message?.trim()) {
       return res.status(400).json(ApiResponse.error('Message content is required.', 400));
@@ -490,12 +503,19 @@ router.post('/:wid/chat', workspaceChatLimiter, requireWorkspaceOwnership, async
         message: message.trim(),
         chatId: activeChatId,
         mode: mode || 'explain',
+        depth: depth || 'detailed',
         history,
         signal: req.signal,
       })) {
         if (clientAborted) break;
+        if (event.type === 'token') {
+          console.log('STREAM STEP 6: Token forwarded to SSE');
+          logger.info('STREAM STEP 6: Token forwarded to SSE');
+        }
         res.write(`data: ${JSON.stringify(event)}\n\n`);
       }
+      console.log('STREAM STEP 9: Stream completed');
+      logger.info('STREAM STEP 9: Stream completed');
     } catch (streamError) {
       logger.error('Stream processing failed', { error: streamError.message });
       if (!clientAborted) {
@@ -545,13 +565,13 @@ router.delete('/:wid/chats/:cid', workspaceApiLimiter, requireWorkspaceOwnership
 // 14. Generate studio output
 router.post('/:wid/generate', workspaceGenerateLimiter, requireWorkspaceOwnership, async (req, res, next) => {
   try {
-    const { type, topicFocus, title } = req.body;
+    const { type, topicFocus, title, depth } = req.body;
     if (!type) return res.status(400).json(ApiResponse.error('Output type is required.', 400));
 
-    // Generates output asynchronously to prevent HTTP timeout for large guides
     const output = await workspaceContainer.studioGenerationService.generate(req.params.wid, type, {
       topicFocus,
       title,
+      depth: depth || 'standard',
     });
 
     res.json(ApiResponse.success(output, 'Generative output created successfully'));
@@ -580,6 +600,8 @@ router.get('/:wid/outputs/:oid', workspaceApiLimiter, requireWorkspaceOwnership,
     next(error);
   }
 });
+
+
 
 // 17. Delete output
 router.delete('/:wid/outputs/:oid', workspaceApiLimiter, requireWorkspaceOwnership, async (req, res, next) => {
@@ -767,6 +789,313 @@ router.post('/infrastructure/sweep-orphans', workspaceApiLimiter, async (req, re
     }
     
     res.json(ApiResponse.success({ success: true }, 'Orphan files swept successfully'));
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 25. Generate Knowledge Visual
+router.post('/:wid/artifacts/generate-visual', workspaceApiLimiter, requireWorkspaceOwnership, async (req, res, next) => {
+  try {
+    const { wid } = req.params;
+    const { prompt, visualType, artifactId: reqArtifactId, sourceDocuments, provider } = req.body;
+
+    let artifactId = reqArtifactId;
+    let version = 1;
+
+    if (artifactId) {
+      const versions = await workspaceContainer.workspaceOutputRepository.getVersionsForArtifact(wid, artifactId);
+      if (versions.length > 0) {
+        version = Math.max(...versions.map(v => v.version || 1)) + 1;
+      }
+    } else {
+      const { v4: uuidv4 } = await import('uuid');
+      artifactId = uuidv4();
+    }
+
+    const outputDoc = await workspaceContainer.workspaceOutputRepository.create(wid, {
+      artifactId,
+      artifactType: 'diagram',
+      title: `Visual: ${visualType || 'Concept Diagram'}`,
+      version,
+      generationPrompt: prompt,
+      sourceDocuments: sourceDocuments || [],
+      status: 'generating',
+      content: '',
+      provider: provider || config.imageProvider || 'gemini',
+      artifactVersion: version,
+      generatedByProvider: provider || config.imageProvider || 'gemini',
+      generatedByModel: '',
+      sourceWorkspaceId: wid,
+      sourceFiles: sourceDocuments || [],
+      generatedAt: new Date().toISOString(),
+    });
+
+    // Run the actual generation asynchronously to prevent request timeout (since NVIDIA NIM takes 5-10s)
+    // We update status in background and return outputDoc with "generating" status immediately
+    (async () => {
+      try {
+        const result = await workspaceContainer.imageGenerationService.generateVisual(wid, {
+          prompt,
+          visualType,
+          artifactId,
+          version,
+          sourceDocuments,
+          provider,
+          userId: req.userId,
+        });
+
+        await workspaceContainer.workspaceOutputRepository.update(wid, outputDoc.id, {
+          status: 'ready',
+          downloadUrl: result.downloadUrl,
+          content: result.optimizedPrompt,
+          provider: result.provider,
+          generatedByProvider: result.provider,
+          generatedByModel: result.model,
+          generatedAt: new Date().toISOString(),
+        });
+      } catch (err) {
+        logger.error('Background visual generation failed', { error: err.message, artifactId, version });
+        await workspaceContainer.workspaceOutputRepository.update(wid, outputDoc.id, {
+          status: 'error',
+          content: `Generation failed: ${err.message}`,
+        });
+      }
+    })();
+
+    res.json(ApiResponse.success({ id: outputDoc.id, artifactId, version, status: 'generating' }, 'Visual generation started'));
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 26. Generate Presentation Outline
+router.post('/:wid/artifacts/generate-outline', workspaceApiLimiter, requireWorkspaceOwnership, async (req, res, next) => {
+  try {
+    const { wid } = req.params;
+    const { prompt, slideCount, sourceDocuments, audience, presentationType } = req.body;
+
+    const result = await workspaceContainer.pptGenerationService.generateOutline(wid, {
+      prompt,
+      slideCount: Number(slideCount || 10),
+      sourceDocuments,
+      audience,
+      presentationType,
+      userId: req.userId,
+    });
+
+    res.json(ApiResponse.success(result, 'Outline generated successfully'));
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 27. Compile Presentation Slides to PPTX
+router.post('/:wid/artifacts/compile-presentation', workspaceApiLimiter, requireWorkspaceOwnership, async (req, res, next) => {
+  try {
+    const { wid } = req.params;
+    const { outline, theme, title, artifactId: reqArtifactId, sourceDocuments } = req.body;
+
+    let artifactId = reqArtifactId;
+    let version = 1;
+
+    if (artifactId) {
+      const versions = await workspaceContainer.workspaceOutputRepository.getVersionsForArtifact(wid, artifactId);
+      if (versions.length > 0) {
+        version = Math.max(...versions.map(v => v.version || 1)) + 1;
+      }
+    } else {
+      const { v4: uuidv4 } = await import('uuid');
+      artifactId = uuidv4();
+    }
+
+    const outputDoc = await workspaceContainer.workspaceOutputRepository.create(wid, {
+      artifactId,
+      artifactType: 'presentation',
+      title: title || `Presentation: ${theme || 'Professional'}`,
+      version,
+      generationPrompt: 'Compiled from presentation outline',
+      sourceDocuments: sourceDocuments || [],
+      status: 'generating',
+      content: JSON.stringify(outline),
+      artifactVersion: version,
+      generatedByProvider: 'gemini',
+      generatedByModel: 'gemini-1.5-flash',
+      sourceWorkspaceId: wid,
+      sourceFiles: sourceDocuments || [],
+      generatedAt: new Date().toISOString(),
+    });
+
+    // Run PPTX compilation asynchronously
+    (async () => {
+      try {
+        const result = await workspaceContainer.pptGenerationService.compilePresentation(wid, {
+          outline,
+          theme,
+          artifactId,
+          version,
+        });
+
+        await workspaceContainer.workspaceOutputRepository.update(wid, outputDoc.id, {
+          status: 'ready',
+          downloadUrl: result.downloadUrl,
+          generatedByProvider: 'gemini',
+          generatedByModel: 'gemini-1.5-flash',
+          generatedAt: new Date().toISOString(),
+        });
+      } catch (err) {
+        logger.error('Background presentation compilation failed', { error: err.message, artifactId, version });
+        await workspaceContainer.workspaceOutputRepository.update(wid, outputDoc.id, {
+          status: 'error',
+          content: `Compilation failed: ${err.message}`,
+        });
+      }
+    })();
+
+    res.json(ApiResponse.success({ id: outputDoc.id, artifactId, version, status: 'generating' }, 'Presentation compilation started'));
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 28. Get Versions List for Artifact
+router.get('/:wid/artifacts/:aid/versions', workspaceApiLimiter, requireWorkspaceOwnership, async (req, res, next) => {
+  try {
+    const { wid, aid } = req.params;
+    const list = await workspaceContainer.workspaceOutputRepository.getVersionsForArtifact(wid, aid);
+    res.json(ApiResponse.success({ list }, 'Artifact versions fetched'));
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 29. Duplicate Artifact
+router.post('/:wid/artifacts/:oid/duplicate', workspaceApiLimiter, requireWorkspaceOwnership, async (req, res, next) => {
+  try {
+    const { wid, oid } = req.params;
+    const duplicated = await workspaceContainer.workspaceOutputRepository.duplicateArtifact(wid, oid);
+    if (!duplicated) {
+      return res.status(404).json(ApiResponse.error('Artifact not found', 404));
+    }
+    res.json(ApiResponse.success(duplicated, 'Artifact duplicated successfully'));
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 30. Rename Artifact Title
+router.patch('/:wid/artifacts/:oid/rename', workspaceApiLimiter, requireWorkspaceOwnership, async (req, res, next) => {
+  try {
+    const { wid, oid } = req.params;
+    const { title } = req.body;
+    if (!title) {
+      return res.status(400).json(ApiResponse.error('Title is required', 400));
+    }
+    const updated = await workspaceContainer.workspaceOutputRepository.update(wid, oid, { title });
+    res.json(ApiResponse.success(updated, 'Artifact renamed successfully'));
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 31. Download local versioned asset
+router.get('/:wid/artifacts/:aid/versions/:versionNum/download', workspaceApiLimiter, requireWorkspaceOwnership, async (req, res, next) => {
+  try {
+    const { wid, aid, versionNum } = req.params;
+    const versions = await workspaceContainer.workspaceOutputRepository.getVersionsForArtifact(wid, aid);
+    const targetVersion = versions.find(v => Number(v.version) === Number(versionNum));
+
+    if (!targetVersion) {
+      return res.status(404).json(ApiResponse.error('Version not found', 404));
+    }
+
+    const ext = targetVersion.artifactType === 'presentation' ? 'pptx' : 'png';
+    const fileName = `version_${versionNum}.${ext}`;
+    
+    const storageService = workspaceContainer.workspaceStorageService;
+    const filePath = storageService.resolveFilePath(wid, aid, fileName);
+
+    const { default: fs } = await import('fs');
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json(ApiResponse.error('Local file not found on disk', 404));
+    }
+
+    res.download(filePath, `${targetVersion.title.replace(/[^\w\s-]/gi, '') || 'artifact'}_v${versionNum}.${ext}`);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 32. Generate Knowledge Audio Summaries / Narrations
+router.post('/:wid/artifacts/generate-audio', workspaceApiLimiter, requireWorkspaceOwnership, async (req, res, next) => {
+  try {
+    const { wid } = req.params;
+    const { prompt, audioType, voice, provider, artifactId: reqArtifactId, sourceDocuments } = req.body;
+
+    let artifactId = reqArtifactId;
+    let version = 1;
+
+    if (artifactId) {
+      const versions = await workspaceContainer.workspaceOutputRepository.getVersionsForArtifact(wid, artifactId);
+      if (versions.length > 0) {
+        version = Math.max(...versions.map(v => v.version || 1)) + 1;
+      }
+    } else {
+      const { v4: uuidv4 } = await import('uuid');
+      artifactId = uuidv4();
+    }
+
+    const outputDoc = await workspaceContainer.workspaceOutputRepository.create(wid, {
+      artifactId,
+      artifactType: 'audio',
+      title: `Audio: ${audioType ? audioType.replace('_', ' ') : 'Summary'}`,
+      version,
+      generationPrompt: prompt,
+      sourceDocuments: sourceDocuments || [],
+      status: 'generating',
+      content: '',
+      provider: provider || config.defaultAudioProvider || 'gemini',
+      artifactVersion: version,
+      generatedByProvider: provider || 'gemini',
+      generatedByModel: 'gemini-2.5-flash',
+      sourceWorkspaceId: wid,
+      sourceFiles: sourceDocuments || [],
+      generatedAt: new Date().toISOString(),
+    });
+
+    // Run the actual generation asynchronously to prevent request timeout (since speech/textbook synthesizers take 10s+)
+    (async () => {
+      try {
+        const result = await workspaceContainer.audioGenerationService.generateAudio(wid, {
+          prompt,
+          audioType,
+          voice,
+          provider,
+          artifactId,
+          version,
+          sourceDocuments,
+          userId: req.userId,
+        });
+
+        await workspaceContainer.workspaceOutputRepository.update(wid, outputDoc.id, {
+          status: 'ready',
+          downloadUrl: result.downloadUrl,
+          content: result.script, // Store text transcript inside content field
+          provider: result.provider,
+          generatedByProvider: result.provider,
+          generatedByModel: result.model,
+          generatedAt: new Date().toISOString(),
+        });
+      } catch (err) {
+        logger.error('Background audio generation failed', { error: err.message, artifactId, version });
+        await workspaceContainer.workspaceOutputRepository.update(wid, outputDoc.id, {
+          status: 'error',
+          content: `Audio generation failed: ${err.message}`,
+        });
+      }
+    })();
+
+    res.json(ApiResponse.success({ id: outputDoc.id, artifactId, version, status: 'generating' }, 'Audio generation started'));
   } catch (error) {
     next(error);
   }

@@ -45,36 +45,6 @@ export default function WorkspaceHeader({
         </div>
       </div>
 
-      {/* Center: Premium Cmd+K Search trigger */}
-      <div className="flex-1 max-w-md mx-6">
-        <button
-          onClick={workspace.sourceCount > 0 ? onOpenSearch : undefined}
-          disabled={workspace.sourceCount === 0}
-          className={`w-full flex items-center justify-between border rounded-xl px-3.5 py-1.5 text-xs transition duration-150 ${
-            workspace.sourceCount === 0
-              ? 'bg-white/[0.01] border-white/[0.02] cursor-not-allowed'
-              : 'bg-white/[0.02] hover:bg-white/[0.04] border-white/5 text-slate-450 hover:text-slate-200 cursor-pointer'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <AppIcon name="search" size={13} className={workspace.sourceCount === 0 ? 'text-slate-600' : 'text-slate-450'} />
-            <span className={workspace.sourceCount === 0 ? 'text-slate-500' : ''}>
-              {workspace.sourceCount === 0 ? 'Add sources to enable search' : 'Search grounding sources...'}
-            </span>
-          </div>
-          {workspace.sourceCount === 0 ? (
-            <span className="bg-white/[0.03] px-2 py-0.5 rounded-md border border-white/5 text-[9px] font-medium text-slate-500">
-              No Sources
-            </span>
-          ) : (
-            <div className="flex items-center gap-0.5 opacity-60">
-              <span className="bg-white/[0.05] px-1 py-0.5 rounded-md border border-white/5 text-[9px] font-mono text-slate-400">⌘</span>
-              <span className="bg-white/[0.05] px-1.5 py-0.5 rounded-md border border-white/5 text-[9px] font-mono text-slate-400">K</span>
-            </div>
-          )}
-        </button>
-      </div>
-
       {/* Right: Actions */}
       <div className="flex items-center gap-2">
         <button

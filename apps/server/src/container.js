@@ -1,5 +1,6 @@
 import { getDb } from './config/firebase.js';
 import { geminiFlash } from './config/gemini.js';
+import { studentNvidiaProvider } from './providers/nvidiaChat.provider.js';
 import LessonRepository from './repositories/lesson.repository.js';
 import TranscriptChunkRepository from './repositories/transcriptChunk.repository.js';
 import ChatSessionRepository from './repositories/chatSession.repository.js';
@@ -12,6 +13,7 @@ import VideoStorageService from './services/videoStorage.service.js';
 import LessonService from './services/lesson.service.js';
 import ChatService from './services/chat.service.js';
 import ingestionQueue from './infrastructure/queue.js';
+import workspaceContainer from './container/workspaceContainer.js';
 
 class Container {
   constructor() {
@@ -33,6 +35,7 @@ class Container {
       aiMetadataService: this.aiMetadataService,
       chunkCacheService: this.chunkCacheService,
       videoStorageService: this.videoStorageService,
+      embeddingService: workspaceContainer.embeddingService,
     });
 
     this.lessonService = new LessonService({
@@ -50,7 +53,8 @@ class Container {
       lessonRepository: this.lessonRepository,
       chunkCacheService: this.chunkCacheService,
       chatSessionRepository: this.chatSessionRepository,
-      aiClient: geminiFlash,
+      aiClient: studentNvidiaProvider,
+      vectorSearchService: workspaceContainer.vectorSearchService,
     });
   }
 }

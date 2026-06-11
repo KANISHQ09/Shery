@@ -1,8 +1,95 @@
 import logger from '../../loggers/logger.js';
 
 class WorkspaceMemoryService {
-  constructor({ workspaceMemoryRepository }) {
+  constructor({ workspaceMemoryRepository, sourceGraphService }) {
     this.memoryRepo = workspaceMemoryRepository;
+    this.sourceGraphService = sourceGraphService;
+  }
+
+  async getOrCreateLearningGraph(workspaceId) {
+    const memory = await this.memoryRepo.getOrCreate(workspaceId);
+    let learningGraph = memory.learningGraph || [];
+
+    if (this.sourceGraphService) {
+      try {
+        const graph = await this.sourceGraphService.buildGraph(workspaceId);
+        const clusters = graph.clusters || [];
+        if (clusters.length > 0) {
+          const allConceptNames = clusters.map(c => c.name);
+          
+          // Map existing concepts for quick check
+          const existingMap = new Map();
+          learningGraph.forEach(node => {
+            existingMap.set(node.concept.toLowerCase(), node);
+          });
+
+          let updated = false;
+          const mergedGraph = clusters.map(cluster => {
+            const conceptLower = cluster.name.toLowerCase();
+            const existing = existingMap.get(conceptLower);
+            if (existing) {
+              return {
+                ...existing,
+                prerequisites: this._getPrerequisitesFor(cluster.name, allConceptNames),
+                relatedConcepts: (cluster.concepts || []).filter(c => c.toLowerCase() !== conceptLower)
+              };
+            } else {
+              updated = true;
+              return {
+                concept: cluster.name,
+                masteryScore: 10,
+                lastDiscussed: null,
+                prerequisites: this._getPrerequisitesFor(cluster.name, allConceptNames),
+                relatedConcepts: (cluster.concepts || []).filter(c => c.toLowerCase() !== conceptLower)
+              };
+            }
+          });
+
+          // Keep concepts that are in learningGraph but no longer in clusters
+          const clusterNamesLower = new Set(clusters.map(c => c.name.toLowerCase()));
+          learningGraph.forEach(node => {
+            if (!clusterNamesLower.has(node.concept.toLowerCase())) {
+              mergedGraph.push(node);
+            }
+          });
+
+          if (updated || learningGraph.length === 0 || mergedGraph.length !== learningGraph.length) {
+            learningGraph = mergedGraph;
+            await this.memoryRepo.update(workspaceId, { learningGraph });
+          }
+        }
+      } catch (err) {
+        logger.warn('Failed to sync learningGraph from sources', { workspaceId, error: err.message });
+      }
+    }
+    return learningGraph;
+  }
+
+  _getPrerequisitesFor(concept, allConceptNames = []) {
+    const t = concept.toLowerCase();
+    const map = {
+      'embedding': ['embeddings', 'tokens', 'vectors'],
+      'vector': ['similarity', 'vector databases', 'indexing'],
+      'rag': ['embeddings', 'retrieval', 'prompts'],
+      'agent': ['rag', 'chaining', 'memory', 'planning'],
+      'chain': ['prompts', 'llm settings'],
+      'retrieval': ['similarity', 'indexing', 'grounding']
+    };
+
+    const prereqs = [];
+    for (const key of Object.keys(map)) {
+      if (t.includes(key)) {
+        map[key].forEach(req => {
+          const match = allConceptNames.find(c => c.toLowerCase().includes(req.toLowerCase()) || req.toLowerCase().includes(c.toLowerCase()));
+          if (match) {
+            prereqs.push(match);
+          } else {
+            prereqs.push(req.charAt(0).toUpperCase() + req.slice(1));
+          }
+        });
+      }
+    }
+    return [...new Set(prereqs)];
   }
 
   async recordInteraction(workspaceId, query, responseChunks) {
@@ -20,6 +107,38 @@ class WorkspaceMemoryService {
 
       if (concepts.length > 0) {
         await this.memoryRepo.addFocusArea(workspaceId, concepts[0]);
+      }
+
+      // V3: Detect concepts discussed and update mastery scores
+      const learningGraph = await this.getOrCreateLearningGraph(workspaceId);
+      if (learningGraph && learningGraph.length > 0) {
+        const discussedConcepts = allConcepts.map(c => c.toLowerCase());
+        const queryLower = query.toLowerCase();
+
+        const updatedGraph = learningGraph.map(node => {
+          let bump = 0;
+          const conceptLower = node.concept.toLowerCase();
+
+          const isDirectQuery = queryLower.includes(conceptLower) || concepts.some(c => c.toLowerCase().includes(conceptLower) || conceptLower.includes(c.toLowerCase()));
+          const isDiscussed = discussedConcepts.some(c => c.includes(conceptLower) || conceptLower.includes(c));
+
+          if (isDirectQuery) {
+            bump = 20;
+          } else if (isDiscussed) {
+            bump = 10;
+          }
+
+          if (bump > 0) {
+            return {
+              ...node,
+              masteryScore: Math.min(100, node.masteryScore + bump),
+              lastDiscussed: new Date().toISOString()
+            };
+          }
+          return node;
+        });
+
+        await this.memoryRepo.update(workspaceId, { learningGraph: updatedGraph });
       }
 
       logger.info('Workspace interaction recorded', {

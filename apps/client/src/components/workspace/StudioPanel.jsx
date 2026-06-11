@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AppIcon from '../AppIcon';
-import OutputCard from './OutputCard';
+import ArtifactsPanel from './ArtifactsPanel';
 
 export default function StudioPanel({
   outputs = [],
@@ -10,6 +10,12 @@ export default function StudioPanel({
   onGenerate,
   onSelectOutput,
   onDeleteOutput,
+  onDuplicateOutput,
+  onRenameOutput,
+  onViewVersions,
+  onOpenVisualModal,
+  onOpenPresentationModal,
+  onOpenAudioModal,
 }) {
   const [topicFocus, setTopicFocus] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
@@ -18,36 +24,42 @@ export default function StudioPanel({
   const [isExpandedTools, setIsExpandedTools] = useState(false);
 
   const tools = [
-    { id: 'study_guide', label: 'Study Guide', icon: 'book', color: 'text-emerald-450', category: 'textbook', desc: 'Comprehensive conceptual overview' },
-    { id: 'flashcards', label: 'Flashcards', icon: 'sparkles', color: 'text-amber-450', category: 'active', desc: 'CSS 3D spaced-repetition card decks' },
-    { id: 'faq', label: 'Grounding FAQ', icon: 'message', color: 'text-orange-400', category: 'textbook', desc: 'Common questions from documents' },
-    { id: 'timeline', label: 'Concept Timeline', icon: 'clock', color: 'text-blue-450', category: 'visual', desc: 'Milestone progressions & histories' },
-    { id: 'key_insights', label: 'Key Insights', icon: 'lightbulb', color: 'text-yellow-450', category: 'textbook', desc: 'Critical takeaways and principles' },
-    { id: 'key_definitions', label: 'Glossary', icon: 'alignLeft', color: 'text-pink-450', category: 'textbook', desc: 'Indexed dictionary of key terms' },
-    { id: 'interview_questions', label: 'Mock Q&A', icon: 'mic', color: 'text-rose-450', category: 'active', desc: 'Oral prep & examiner queries' },
-    { id: 'topic_breakdown', label: 'Mind-Map', icon: 'brain', color: 'text-violet-400', category: 'visual', desc: 'Nested hierarchy & core clusters' },
-    { id: 'exam_prep', label: 'Practice Exam', icon: 'graduation', color: 'text-cyan-400', category: 'active', desc: 'Multiple choice mock test player' },
-    { id: 'revision_sheet', label: 'Revision Sheet', icon: 'rocket', color: 'text-orange-450', category: 'textbook', desc: 'Quick cheat-sheet summary card' },
+    // LEARN
+    { id: 'study_guide',        label: 'Deep Study Guide',         icon: 'book',        color: 'text-emerald-400', category: 'learn',    desc: 'Comprehensive grounded overview' },
+    { id: 'key_insights',       label: 'Research Insights',        icon: 'lightbulb',   color: 'text-yellow-400',  category: 'learn',    desc: 'Top 10 profound takeaways' },
+    { id: 'faq',                label: 'Grounded FAQ',             icon: 'message',     color: 'text-orange-400',  category: 'learn',    desc: 'Source-grounded Q&A pairs' },
+    // MEMORIZE
+    { id: 'flashcards',         label: 'Flashcards',               icon: 'sparkles',    color: 'text-amber-400',   category: 'memorize', desc: 'Active-recall card decks' },
+    { id: 'revision_sheet',     label: 'Revision Sheet',           icon: 'rocket',      color: 'text-orange-400',  category: 'memorize', desc: 'Cheat-sheet summary card' },
+    { id: 'key_definitions',    label: 'Glossary',                 icon: 'alignLeft',   color: 'text-pink-400',    category: 'memorize', desc: 'Indexed dictionary of terms' },
+    // TEST
+    { id: 'interview_questions',label: 'Mock Q&A',                 icon: 'mic',         color: 'text-rose-400',    category: 'test',     desc: 'Oral prep & exam queries' },
+    { id: 'exam_prep',          label: 'Exam Simulator',           icon: 'graduation',  color: 'text-cyan-400',    category: 'test',     desc: 'MCQ & short-answer exam' },
+    // VISUALIZE
+    { id: 'topic_breakdown',    label: 'Interactive Mind Map',     icon: 'brain',       color: 'text-violet-400',  category: 'visualize',desc: 'Nested concept clusters' },
+    { id: 'mermaid_diagram',    label: 'Mermaid Knowledge Diagram',icon: 'sparkles',    color: 'text-indigo-400',  category: 'visualize',desc: 'Flow & architecture diagrams' },
   ];
 
   const categories = [
-    { id: 'all', label: 'All Tools' },
-    { id: 'textbook', label: 'Editorial' },
-    { id: 'visual', label: 'Visual' },
-    { id: 'active', label: 'Interactive' },
+    { id: 'all',      label: 'All' },
+    { id: 'learn',    label: 'Learn' },
+    { id: 'memorize', label: 'Memorize' },
+    { id: 'test',     label: 'Test' },
+    { id: 'visualize',label: 'Visualize' },
   ];
+
+  // Progressive synthesis loader — stage-aware labels
+  const synthesisSteps = [
+    { text: 'Retrieving Sources...', limit: 25 },
+    { text: 'Ranking Evidence...', limit: 50 },
+    { text: 'Structuring Output...', limit: 75 },
+    { text: 'Generating Asset...', limit: 95 },
+  ];
+
 
   const filteredTools = tools.filter(
     (tool) => activeCategory === 'all' || tool.category === activeCategory
   );
-
-  // Progressive synthesis loader simulation
-  const synthesisSteps = [
-    { text: 'Mining grounding source documents...', limit: 25 },
-    { text: 'Mapping semantic concept links...', limit: 50 },
-    { text: 'Structuring pedagogical outlines...', limit: 75 },
-    { text: 'Generating textbook-grade markup...', limit: 95 },
-  ];
 
   useEffect(() => {
     let interval;
@@ -75,13 +87,14 @@ export default function StudioPanel({
     return () => clearInterval(interval);
   }, [isGenerating]);
 
+  const [studyGuideDepth, setStudyGuideDepth] = useState('standard');
+
   const handleCreate = (type) => {
     if (isGenerating) return;
     onGenerate({
       type,
-      topicFocus: topicFocus.trim() || undefined,
+      depth: type === 'study_guide' ? studyGuideDepth : undefined,
     });
-    setTopicFocus('');
   };
 
   return (
@@ -95,31 +108,9 @@ export default function StudioPanel({
             </div>
             <span className="text-[10px] font-extrabold text-slate-200 uppercase tracking-widest">Synthesis Lab</span>
           </div>
-          <span className="text-[9px] font-mono text-slate-500">v1.2</span>
         </div>
 
-        {/* Optional focus query */}
-        <div className="relative">
-          <input
-            type="text"
-            value={topicFocus}
-            onChange={(e) => setTopicFocus(e.target.value)}
-            placeholder="Focus topic (e.g. Chapter 4)..."
-            className="w-full bg-[#0a0a0f] border border-white/5 rounded-xl pl-3 pr-8 py-2 text-[11px] text-slate-200 placeholder-slate-500 focus:outline-none focus:border-orange-500/30 focus:ring-1 focus:ring-orange-500/20 transition-all font-medium"
-          />
-          {topicFocus ? (
-            <button
-              onClick={() => setTopicFocus('')}
-              className="absolute right-2.5 top-2.5 text-slate-500 hover:text-slate-300 transition"
-            >
-              <AppIcon name="x" size={10} />
-            </button>
-          ) : (
-            <div className="absolute right-2.5 top-2.5 text-slate-650">
-              <AppIcon name="target" size={10} />
-            </div>
-          )}
-        </div>
+
       </div>
 
       {/* Category Tabs */}
@@ -140,7 +131,36 @@ export default function StudioPanel({
       </div>
 
       {/* Output Grid and Generated lists */}
-      <div className="flex-1 overflow-y-auto min-h-0 p-4 space-y-6 scrollbar-thin">
+      <div className="flex-1 overflow-y-auto min-h-0 p-4 space-y-5 scrollbar-thin">
+        
+        {/* Refined V4 primary buttons */}
+        <div className="grid grid-cols-3 gap-2 shrink-0">
+          <button
+            onClick={onOpenPresentationModal}
+            disabled={isGenerating}
+            className="flex flex-col items-center justify-center p-3 rounded-xl bg-orange-500/10 border border-orange-500/20 hover:bg-orange-500/15 hover:border-orange-500/30 transition text-center disabled:opacity-50 select-none cursor-pointer h-16"
+          >
+            <AppIcon name="book" size={14} className="text-orange-400 mb-1" />
+            <span className="text-[9.5px] font-extrabold text-slate-200">Presentation</span>
+          </button>
+          <button
+            onClick={onOpenVisualModal}
+            disabled={isGenerating}
+            className="flex flex-col items-center justify-center p-3 rounded-xl bg-orange-500/10 border border-orange-500/20 hover:bg-orange-500/15 hover:border-orange-500/30 transition text-center disabled:opacity-50 select-none cursor-pointer h-16"
+          >
+            <AppIcon name="sparkles" size={14} className="text-orange-400 mb-1" />
+            <span className="text-[9.5px] font-extrabold text-slate-200">Visual</span>
+          </button>
+          <button
+            onClick={onOpenAudioModal}
+            disabled={isGenerating}
+            className="flex flex-col items-center justify-center p-3 rounded-xl bg-orange-500/10 border border-orange-500/20 hover:bg-orange-500/15 hover:border-orange-500/30 transition text-center disabled:opacity-50 select-none cursor-pointer h-16"
+          >
+            <AppIcon name="mic" size={14} className="text-orange-400 mb-1" />
+            <span className="text-[9.5px] font-extrabold text-slate-200">Audio</span>
+          </button>
+        </div>
+
         {/* Generative Cards Grid */}
         <div className="space-y-3">
           {/* Lightweight Quick Actions */}
@@ -148,17 +168,40 @@ export default function StudioPanel({
             <div className="space-y-3">
               <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest block">Quick Actions</span>
               <div className="flex flex-col gap-1.5">
-                {filteredTools.slice(0, 3).map((tool) => (
-                  <button
-                    key={tool.id}
-                    onClick={() => handleCreate(tool.id)}
-                    disabled={isGenerating}
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/[0.03] text-left transition disabled:opacity-50 group cursor-pointer"
-                  >
-                    <AppIcon name={tool.icon} size={12} className={`${tool.color} opacity-80 group-hover:opacity-100 transition`} />
-                    <span className="text-[11px] font-semibold text-slate-300 group-hover:text-slate-100 transition">{tool.label}</span>
-                  </button>
-                ))}
+                {filteredTools.slice(0, 3).map((tool) => {
+                  const isStudyGuide = tool.id === 'study_guide';
+                  return (
+                    <div
+                      key={tool.id}
+                      onClick={() => {
+                        if (isGenerating) return;
+                        handleCreate(tool.id);
+                      }}
+                      className={`flex items-center justify-between px-3 py-2 rounded-lg hover:bg-white/[0.03] text-left transition group cursor-pointer ${
+                        isGenerating ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <AppIcon name={tool.icon} size={12} className={`${tool.color} opacity-80 group-hover:opacity-100 transition`} />
+                        <span className="text-[11px] font-semibold text-slate-300 group-hover:text-slate-100 transition">{tool.label}</span>
+                      </div>
+                      {isStudyGuide && (
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <select
+                            value={studyGuideDepth}
+                            onChange={(e) => setStudyGuideDepth(e.target.value)}
+                            className="bg-neutral-900 border border-white/10 hover:border-orange-500/20 rounded px-1.5 py-0.5 text-[8.5px] font-semibold text-slate-300 focus:outline-none focus:border-orange-500/35 transition cursor-pointer"
+                          >
+                            <option value="quick">Quick</option>
+                            <option value="standard">Standard</option>
+                            <option value="deep">Deep</option>
+                            <option value="expert">Expert</option>
+                          </select>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
               <button
                 onClick={() => setIsExpandedTools(true)}
@@ -180,24 +223,47 @@ export default function StudioPanel({
                 </button>
               </div>
               <div className="grid grid-cols-2 gap-2">
-                {filteredTools.map((tool) => (
-                  <motion.button
-                    key={tool.id}
-                    onClick={() => handleCreate(tool.id)}
-                    disabled={isGenerating}
-                    whileHover={{ scale: 1.01, translateY: -1 }}
-                    whileTap={{ scale: 0.99 }}
-                    className="flex flex-col items-start p-2.5 rounded-xl bg-white/[0.015] border border-white/5 hover:border-orange-500/20 hover:bg-orange-500/[0.01] transition-premium text-left disabled:opacity-50 disabled:cursor-not-allowed group h-[82px] justify-between"
-                  >
-                    <div className={`w-5 h-5 rounded-lg bg-white/[0.02] border border-white/5 flex items-center justify-center transition group-hover:bg-orange-500/10 group-hover:border-orange-500/20 group-hover:${tool.color}`}>
-                      <AppIcon name={tool.icon} size={10} className={`${tool.color} transition-transform duration-300 group-hover:scale-110`} />
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-bold text-slate-200 block group-hover:text-orange-400 transition truncate w-full">{tool.label}</span>
-                      <span className="text-[8px] text-slate-500 leading-tight block group-hover:text-slate-450 transition line-clamp-1 mt-0.5 font-medium">{tool.desc}</span>
-                    </div>
-                  </motion.button>
-                ))}
+                {filteredTools.map((tool) => {
+                  const isStudyGuide = tool.id === 'study_guide';
+                  return (
+                    <motion.div
+                      key={tool.id}
+                      onClick={(e) => {
+                        if (isGenerating) return;
+                        handleCreate(tool.id);
+                      }}
+                      whileHover={{ scale: 1.01, translateY: -1 }}
+                      whileTap={{ scale: 0.99 }}
+                      className={`flex flex-col items-start p-2.5 rounded-xl bg-white/[0.015] border border-white/5 hover:border-orange-500/20 hover:bg-orange-500/[0.01] transition-premium text-left group min-h-[82px] h-auto justify-between cursor-pointer ${
+                        isGenerating ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''
+                      }`}
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <div className={`w-5 h-5 rounded-lg bg-white/[0.02] border border-white/5 flex items-center justify-center transition group-hover:bg-orange-500/10 group-hover:border-orange-500/20 group-hover:${tool.color}`}>
+                          <AppIcon name={tool.icon} size={10} className={`${tool.color} transition-transform duration-300 group-hover:scale-110`} />
+                        </div>
+                        {isStudyGuide && (
+                          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                            <select
+                              value={studyGuideDepth}
+                              onChange={(e) => setStudyGuideDepth(e.target.value)}
+                              className="bg-neutral-900 border border-white/10 hover:border-orange-500/20 rounded px-1 py-0.5 text-[8.5px] font-semibold text-slate-300 focus:outline-none focus:border-orange-500/35 transition cursor-pointer select-none"
+                            >
+                              <option value="quick">Quick</option>
+                              <option value="standard">Standard</option>
+                              <option value="deep">Deep</option>
+                              <option value="expert">Expert</option>
+                            </select>
+                          </div>
+                        )}
+                      </div>
+                      <div className="w-full mt-2">
+                        <span className="text-[10px] font-bold text-slate-200 block group-hover:text-orange-400 transition truncate w-full">{tool.label}</span>
+                        <span className="text-[8px] text-slate-500 leading-tight block group-hover:text-slate-450 transition line-clamp-1 mt-0.5 font-medium">{tool.desc}</span>
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -267,39 +333,18 @@ export default function StudioPanel({
           )}
         </AnimatePresence>
 
-        {/* List of previously generated outputs */}
-        <div className="space-y-3">
-          <span className="text-[9px] font-extrabold text-slate-500 uppercase tracking-widest block">Grounded Assets ({outputs.length})</span>
-          <div className="space-y-2">
-            <AnimatePresence initial={false}>
-              {outputs.map((out) => (
-                <motion.div
-                  key={out.id}
-                  layout
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <OutputCard
-                    output={out}
-                    isActive={activeOutputId === out.id}
-                    onClick={() => onSelectOutput(out)}
-                    onDelete={() => onDeleteOutput(out.id)}
-                  />
-                </motion.div>
-              ))}
-            </AnimatePresence>
-
-            {outputs.length === 0 && !isGenerating && (
-              <div className="text-center py-10 bg-white/[0.01] border border-white/5 border-dashed rounded-xl flex flex-col items-center justify-center p-4">
-                <AppIcon name="file" size={14} className="text-slate-600 mb-2" />
-                <span className="text-[10px] text-slate-500 font-medium">No synthesized assets yet</span>
-                <span className="text-[8px] text-slate-650 mt-1 max-w-[160px] leading-relaxed">Select a template above to generate study guides.</span>
-              </div>
-            )}
-          </div>
-        </div>
+        {/* Artifacts Explorer Grid */}
+        <ArtifactsPanel
+          outputs={outputs}
+          activeOutputId={activeOutputId}
+          isGenerating={isGenerating}
+          onSelectOutput={onSelectOutput}
+          onDeleteOutput={onDeleteOutput}
+          onDuplicateOutput={onDuplicateOutput}
+          onRenameOutput={onRenameOutput}
+          onViewVersions={onViewVersions}
+          onGenerate={onGenerate}
+        />
       </div>
     </aside>
   );

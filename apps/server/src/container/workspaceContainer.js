@@ -1,6 +1,6 @@
 import { getDb } from '../config/firebase.js';
 import { geminiFlash } from '../config/gemini.js';
-import { getNvidiaClient } from '../config/nvidia.js';
+import { nvidiaChatProvider } from '../providers/nvidiaChat.provider.js';
 import { getQdrantClient } from '../infrastructure/qdrant.js';
 import config from '../config/env.js';
 import { redisConnection } from '../infrastructure/redis.js';
@@ -13,6 +13,7 @@ import WorkspaceChatRepository from '../repositories/workspace/workspaceChat.rep
 import WorkspaceOutputRepository from '../repositories/workspace/workspaceOutput.repository.js';
 import WorkspaceMemoryRepository from '../repositories/workspace/workspaceMemory.repository.js';
 import TranscriptCacheRepository from '../repositories/workspace/transcriptCache.repository.js';
+import GenerationLogRepository from '../repositories/workspace/generationLog.repository.js';
 
 // Services
 import EmbeddingService from '../services/workspace/embedding.service.js';
@@ -28,11 +29,18 @@ import IngestionTracerService from '../services/workspace/ingestionTracer.servic
 import IngestionService from '../services/workspace/ingestion.service.js';
 import WorkspaceChatService from '../services/workspace/workspaceChat.service.js';
 import StudioGenerationService from '../services/workspace/studioGeneration.service.js';
+import ImageGenerationService from '../services/workspace/imageGeneration.service.js';
+import PptGenerationService from '../services/workspace/pptGeneration.service.js';
+import MediaProviderService from '../services/workspace/mediaProvider.service.js';
+import AudioGenerationService from '../services/workspace/audioGeneration.service.js';
 
 // New Intelligence Services
 import RetrievalEvaluationService from '../services/workspace/retrievalEvaluation.service.js';
 import LearningIntelligenceService from '../services/workspace/learningIntelligence.service.js';
 import KnowledgeCoverageService from '../services/workspace/knowledgeCoverage.service.js';
+import PromptClassifierService from '../services/workspace/promptClassifier.service.js';
+import audioProvider from '../providers/audio.provider.js';
+import presentationProvider from '../providers/presentation.provider.js';
 
 // New Ingestion & State Hardening Services
 import EmbeddingProviderRegistryService from '../services/workspace/embeddingProviderRegistry.service.js';
@@ -62,6 +70,7 @@ class WorkspaceContainer {
     this.workspaceOutputRepository = new WorkspaceOutputRepository(getDb);
     this.workspaceMemoryRepository = new WorkspaceMemoryRepository(getDb);
     this.transcriptCacheRepository = new TranscriptCacheRepository(getDb);
+    this.generationLogRepository = new GenerationLogRepository(getDb);
 
     // 2. Auxiliary Services
     this.pdfParserService = new PdfParserService();
@@ -114,13 +123,14 @@ class WorkspaceContainer {
       embeddingService: this.embeddingService
     });
 
-    this.workspaceMemoryService = new WorkspaceMemoryService({
-      workspaceMemoryRepository: this.workspaceMemoryRepository
-    });
-
     this.sourceGraphService = new SourceGraphService({
       workspaceSourceRepository: this.workspaceSourceRepository,
       vectorSearchService: this.vectorSearchService
+    });
+
+    this.workspaceMemoryService = new WorkspaceMemoryService({
+      workspaceMemoryRepository: this.workspaceMemoryRepository,
+      sourceGraphService: this.sourceGraphService
     });
 
     // New Intelligence Registrations
@@ -136,6 +146,8 @@ class WorkspaceContainer {
       sourceGraphService: this.sourceGraphService,
       workspaceSourceRepository: this.workspaceSourceRepository,
     });
+
+    this.promptClassifierService = new PromptClassifierService({ geminiFlash });
 
     // Local Video Ingestion Services Instantiation
     this.workspaceStorageService = new WorkspaceStorageService();
@@ -215,7 +227,7 @@ class WorkspaceContainer {
       contextManagerService: this.contextManagerService,
       workspaceMemoryService: this.workspaceMemoryService,
       workspaceChatRepository: this.workspaceChatRepository,
-      geminiFlash,
+      chatProvider: nvidiaChatProvider,
       retrievalEvaluationService: this.retrievalEvaluationService,
       workspaceSourceRepository: this.workspaceSourceRepository,
     });
@@ -224,7 +236,36 @@ class WorkspaceContainer {
       vectorSearchService: this.vectorSearchService,
       contextManagerService: this.contextManagerService,
       workspaceOutputRepository: this.workspaceOutputRepository,
-      geminiFlash
+      workspaceSourceRepository: this.workspaceSourceRepository,
+      chatProvider: nvidiaChatProvider, // NVIDIA primary (internal fallback chain)
+      geminiFlash,                      // Gemini cross-provider fallback
+    });
+
+    this.mediaProviderService = new MediaProviderService();
+
+    this.audioGenerationService = new AudioGenerationService({
+      audioProvider,
+      vectorSearchService: this.vectorSearchService,
+      contextManagerService: this.contextManagerService,
+      generationLogRepository: this.generationLogRepository,
+    });
+
+    this.imageGenerationService = new ImageGenerationService({
+      geminiFlash,
+      workspaceStorageService: this.workspaceStorageService,
+      workspaceOutputRepository: this.workspaceOutputRepository,
+      mediaProviderService: this.mediaProviderService,
+      promptClassifierService: this.promptClassifierService,
+      generationLogRepository: this.generationLogRepository,
+    });
+
+    this.pptGenerationService = new PptGenerationService({
+      presentationProvider,
+      vectorSearchService: this.vectorSearchService,
+      contextManagerService: this.contextManagerService,
+      workspaceStorageService: this.workspaceStorageService,
+      workspaceOutputRepository: this.workspaceOutputRepository,
+      generationLogRepository: this.generationLogRepository,
     });
   }
 }

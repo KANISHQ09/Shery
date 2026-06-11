@@ -39,60 +39,56 @@ class LearningIntelligenceService {
       });
     });
 
-    // 4. Estimate Concept Mastery percentages
-    // Mastered = frequent concepts that have been referenced in questions & reviewed multiple times with positive feedback
+    // 4. Estimate Concept Mastery percentages or load from learningGraph
+    const learningGraph = memory.learningGraph || [];
     const estimatedMastery = clusters.map(cluster => {
       const clusterConcepts = new Set(cluster.concepts.map(c => c.toLowerCase()));
+      const graphNode = learningGraph.find(n => n.concept.toLowerCase() === cluster.name.toLowerCase());
       
-      // Calculate focus level (how much has user queried this cluster?)
+      let score = 10;
       let queryHits = 0;
-      chatQueries.forEach(query => {
-        clusterConcepts.forEach(concept => {
-          if (query.includes(concept)) queryHits++;
-        });
-      });
-
-      // Calculate memory revision score
-      let revisionScore = 0;
-      revisionHistory.forEach(rev => {
-        if (clusterConcepts.has(rev.topic?.toLowerCase())) {
-          // revision rating between 1-5 maps to percentage weight
-          revisionScore += (rev.confidence || 3) / 5;
-        }
-      });
-
-      // Simple mastery estimation algorithm
-      const frequencyWeight = frequentConcepts.find(f => clusterConcepts.has(f.term?.toLowerCase()))?.count || 0;
       
-      const score = Math.min(
-        100,
-        Math.round(((queryHits * 15) + (revisionScore * 25) + (frequencyWeight * 10) + 15))
-      );
+      if (graphNode) {
+        score = graphNode.masteryScore;
+        queryHits = graphNode.lastDiscussed ? 1 : 0;
+      } else {
+        // Fallback estimation
+        let localHits = 0;
+        chatQueries.forEach(query => {
+          clusterConcepts.forEach(concept => {
+            if (query.includes(concept)) localHits++;
+          });
+        });
+        queryHits = localHits;
+        const frequencyWeight = frequentConcepts.find(f => clusterConcepts.has(f.term?.toLowerCase()))?.count || 0;
+        score = Math.min(100, Math.round((queryHits * 15) + (frequencyWeight * 10) + 15));
+      }
 
       return {
         clusterName: cluster.name,
         masteryLevel: score,
-        status: score > 75 ? 'Mastered' : score > 40 ? 'Learning' : 'Unexplored',
+        status: score >= 75 ? 'Mastered' : score > 10 ? 'Learning' : 'Unexplored',
         concepts: cluster.concepts,
         queryHits,
       };
     });
 
     // 5. Detect Prerequisite Gaps
-    // If a user queries advanced topics (e.g., 'embeddings', 'vector-stores') but has never uploaded or queried basic chapters ('indexing', 'tokens')
     const prerequisiteGaps = [];
-    const advancedClusters = estimatedMastery.filter(e => e.queryHits > 0 && this._isAdvancedTopic(e.clusterName));
+    const activeTopics = estimatedMastery.filter(e => e.queryHits > 0 || e.masteryLevel > 10);
     
-    for (const adv of advancedClusters) {
-      const basicPrereqs = this._getPrerequisitesFor(adv.clusterName);
+    for (const active of activeTopics) {
+      const graphNode = learningGraph.find(n => n.concept.toLowerCase() === active.clusterName.toLowerCase());
+      const basicPrereqs = graphNode ? graphNode.prerequisites : this._getPrerequisitesFor(active.clusterName);
+      
       for (const basic of basicPrereqs) {
         const basicStatus = estimatedMastery.find(e => e.clusterName.toLowerCase() === basic.toLowerCase());
-        if (!basicStatus || basicStatus.masteryLevel < 35) {
+        if (!basicStatus || basicStatus.masteryLevel < 40) {
           prerequisiteGaps.push({
-            topic: adv.clusterName,
+            topic: active.clusterName,
             missingPrerequisite: basic,
             impact: 'High',
-            recommendation: `Upload introductory concepts or read chapters covering "${basic}" to better understand the foundations of "${adv.clusterName}".`
+            recommendation: `Ask questions covering "${basic}" or study introductory materials to build the foundations required for "${active.clusterName}".`
           });
         }
       }

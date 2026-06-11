@@ -118,3 +118,34 @@ export async function sweepOrphans() {
   return apiClient.post('/api/workspaces/infrastructure/sweep-orphans', {}, getHeaders());
 }
 
+export async function generateVisual(wid, data) {
+  return apiClient.post(`/api/workspaces/${wid}/artifacts/generate-visual`, data, getHeaders());
+}
+
+export async function generateOutline(wid, data) {
+  return apiClient.post(`/api/workspaces/${wid}/artifacts/generate-outline`, data, getHeaders());
+}
+
+export async function compilePresentation(wid, data) {
+  return apiClient.post(`/api/workspaces/${wid}/artifacts/compile-presentation`, data, getHeaders());
+}
+
+export async function getArtifactVersions(wid, aid) {
+  return apiClient.get(`/api/workspaces/${wid}/artifacts/${aid}/versions`, getHeaders());
+}
+
+export async function duplicateArtifact(wid, oid) {
+  return apiClient.post(`/api/workspaces/${wid}/artifacts/${oid}/duplicate`, {}, getHeaders());
+}
+
+export async function renameArtifact(wid, oid, title) {
+  return apiClient.patch(`/api/workspaces/${wid}/artifacts/${oid}/rename`, { title }, getHeaders());
+}
+
+export async function generateAudio(wid, data) {
+  return apiClient.post(`/api/workspaces/${wid}/artifacts/generate-audio`, data, getHeaders());
+}
+
+
+
+

@@ -33,6 +33,23 @@ class EnvConfig {
     this.nvidiaApiKey = source.NVIDIA_API_KEY || '';
     this.nvidiaModel = source.NVIDIA_MODEL || 'nvidia/nemotron-3-nano-30b-a3b';
     this.allowedOrigins = splitCsv(source.CORS_ORIGINS);
+    this.falApiKey = source.FAL_KEY || source.FAL_API_KEY || '';
+    this.geminiApiKey = source.GEMINI_API_KEY || '';
+    this.openaiApiKey = source.OPENAI_API_KEY || '';
+    this.elevenlabsApiKey = source.ELEVENLABS_API_KEY || '';
+    this.defaultImageProvider = source.DEFAULT_IMAGE_PROVIDER || 'fal';
+    this.defaultAudioProvider = source.DEFAULT_AUDIO_PROVIDER || 'openai';
+    this.chatProvider = source.CHAT_PROVIDER || 'nvidia';
+    this.chatModel = source.CHAT_MODEL || 'nvidia/nemotron-3-nano-30b-a3b';
+    this.imageProvider = source.IMAGE_PROVIDER || 'gemini';
+    this.imageModel = source.IMAGE_MODEL || 'gemini-2.5-flash-image-preview';
+    this.imageModelDefault = source.IMAGE_MODEL_DEFAULT || 'flux-1-schnell';
+    this.imageModelText = source.IMAGE_MODEL_TEXT || 'qwen-image';
+    this.presentationProvider = source.PRESENTATION_PROVIDER || 'gemini';
+    this.presentationModel = source.PRESENTATION_MODEL || 'gemini-2.5-flash';
+    this.audioProvider = source.AUDIO_PROVIDER || 'gemini';
+    this.audioModel = source.AUDIO_MODEL || 'gemini-2.5-flash';
+    this.geminiModel = this.chatModel; // For backward compatibility
 
     // Knowledge Workspace — Qdrant vector DB
     this.qdrantUrl = source.QDRANT_URL || 'http://127.0.0.1:6333';
@@ -62,6 +79,28 @@ class EnvConfig {
         'http://127.0.0.1:5174',
         'http://127.0.0.1:3000',
       ];
+    }
+
+    // Startup validation for required variables (except during testing)
+    if (this.nodeEnv !== 'test' && !process.env.VITEST) {
+      const missingVars = [];
+      if (!this.geminiApiKey) {
+        missingVars.push('GEMINI_API_KEY');
+      }
+      if (!this.nvidiaApiKey) {
+        missingVars.push('NVIDIA_API_KEY');
+      }
+
+      if (missingVars.length > 0) {
+        console.error('\x1b[31m%s\x1b[0m', '======================================================================');
+        console.error('\x1b[31m%s\x1b[0m', ' CRITICAL STARTUP ERROR: Missing Required Environment Variables');
+        console.error('\x1b[31m%s\x1b[0m', '----------------------------------------------------------------------');
+        missingVars.forEach(v => {
+          console.error('\x1b[31m%s\x1b[0m', `  - ${v}`);
+        });
+        console.error('\x1b[31m%s\x1b[0m', '======================================================================');
+        throw new Error(`Startup failed: Missing required environment variables: ${missingVars.join(', ')}`);
+      }
     }
   }
 

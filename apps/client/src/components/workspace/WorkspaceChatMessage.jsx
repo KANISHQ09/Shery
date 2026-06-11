@@ -1,6 +1,10 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import AppIcon from '../AppIcon';
 import CitationChip from './CitationChip';
+import AdaptiveAnswerHeader, { parseResponseEnvelope } from './AdaptiveAnswerHeader';
+import SourceInsightsPanel from './SourceInsightsPanel';
+import ConfidenceExplainer from './ConfidenceExplainer';
+import LearningPathSuggestions from './LearningPathSuggestions';
 import {
   parseEducationalContent,
   PrerequisiteNotice,
@@ -227,28 +231,16 @@ function StandardMarkdownLines({ content, onSelectCitation, messageSources, isSt
       continue;
     }
 
-    // H2 heading
-    if (/^## /.test(trimmed)) {
+    // Headings
+    if (/^#+\s+/.test(trimmed)) {
+      const hashCount = (trimmed.match(/^#+/) || [''])[0].length;
+      const headingText = trimmed.replace(/^[#\-:\s]+/g, '');
+      const level = hashCount <= 2 ? 2 : 3;
       elements.push(
         <SectionHeading
-          key={`h2-${i}`}
-          level={2}
-          text={trimmed.replace(/^## /, '')}
-          onSelectCitation={onSelectCitation}
-          messageSources={messageSources}
-        />
-      );
-      i++;
-      continue;
-    }
-
-    // H3 heading
-    if (/^### /.test(trimmed)) {
-      elements.push(
-        <SectionHeading
-          key={`h3-${i}`}
-          level={3}
-          text={trimmed.replace(/^### /, '')}
+          key={`heading-${i}`}
+          level={level}
+          text={headingText}
           onSelectCitation={onSelectCitation}
           messageSources={messageSources}
         />
@@ -621,6 +613,16 @@ export default function WorkspaceChatMessage({
 }) {
   const isUser = message.role === 'user';
 
+  // Parse the response envelope only for AI messages
+  // useMemo ensures we only re-parse when content changes
+  const envelope = useMemo(() => {
+    if (isUser || !message.content) return null;
+    return parseResponseEnvelope(message.content);
+  }, [isUser, message.content]);
+
+  // Body content is the content with envelope markers stripped
+  const bodyContent = envelope ? envelope.bodyContent : message.content;
+
   return (
     <div className={`flex gap-4 ${isUser ? 'justify-end' : 'justify-start'} animate-in fade-in duration-200`}>
       {/* AI Avatar */}
@@ -645,27 +647,52 @@ export default function WorkspaceChatMessage({
             </p>
           ) : (
             <>
-              <RichMarkdown
+              {/* ── V2: Adaptive Answer Header ─────────────────────────────
+                  Renders: intent badge, level badge, TL;DR, key takeaways,
+                  real-world analogy, and knowledge gap banner.
+                  All parsed from the embedded response envelope markers.
+              ── */}
+              <AdaptiveAnswerHeader
                 content={message.content}
+                intent={message.questionIntent}
+                level={message.learningLevel}
+                isStreaming={isStreaming}
+              />
+
+              {/* ── V2: Source Insights Panel ──────────────────────────────
+                  Shows "Key Insights From Your Sources" with cross-source
+                  synthesis indicator when multiple docs are used.
+              ── */}
+              {envelope?.sourceInsights?.length > 0 && (
+                <SourceInsightsPanel
+                  insights={envelope.sourceInsights}
+                  sourcesUsed={message.sources || []}
+                />
+              )}
+
+              {/* ── Main Body (clean content with envelope markers stripped) */}
+              <RichMarkdown
+                content={bodyContent}
                 onSelectCitation={onSelectCitation}
                 messageSources={message.sources}
                 isStreaming={isStreaming}
               />
 
-              {/* Post-content sections — only when not streaming */}
+              {/* ── Post-content sections — only when not streaming ── */}
               {!isStreaming && (
                 <>
-                  <FollowUpSuggestions
-                     questions={message.followUpQuestions}
-                     onSendMessage={onSendMessage}
+                  {/* V2: Learning Path Suggestions (replaces basic FollowUpSuggestions) */}
+                  <LearningPathSuggestions
+                    questions={message.followUpQuestions}
+                    onSelect={onSendMessage}
                   />
 
+                  {/* Source Bibliography (unchanged) */}
                   <SourceBibliography
-                     sources={message.sources}
-                     onSelectCitation={onSelectCitation}
+                    sources={message.sources}
+                    onSelectCitation={onSelectCitation}
                   />
 
-                  <TrustPanel trustMetrics={message.trustMetrics} />
                 </>
               )}
             </>
