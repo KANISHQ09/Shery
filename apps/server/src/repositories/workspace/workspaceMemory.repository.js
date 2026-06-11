@@ -12,7 +12,11 @@ class WorkspaceMemoryRepository {
     const doc = await ref.get();
 
     if (doc.exists) {
-      return { id: doc.id, ...doc.data() };
+      const data = doc.data() || {};
+      if (!data.learningGraph) {
+        data.learningGraph = [];
+      }
+      return { id: doc.id, ...data };
     }
 
     const now = new Date().toISOString();
@@ -20,6 +24,7 @@ class WorkspaceMemoryRepository {
       focusAreas: [],
       weakAreas: [],
       frequentConcepts: [],
+      learningGraph: [],
       learningPatterns: {
         preferredDepth: 'standard',
         questionTypes: [],

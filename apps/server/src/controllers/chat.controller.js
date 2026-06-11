@@ -53,9 +53,17 @@ class ChatController {
         const { fullResponse: _fullResponse, followUps: _savedFollowUps, ...publicEvent } = event;
         res.write(`data: ${JSON.stringify(publicEvent)}\n\n`);
       }
-    } catch {
+    } catch (err) {
       if (!clientAborted && !res.writableEnded) {
-        res.write(`data: ${JSON.stringify({ type: 'error', message: 'AI service error. Please try again.' })}\n\n`);
+        const contextErrors = [
+          'Retrieval unavailable',
+          'Transcript unavailable',
+          'No indexed content found',
+          'Provider unavailable',
+          'NVIDIA service temporarily unavailable'
+        ];
+        const message = contextErrors.includes(err.message) ? err.message : 'AI service error. Please try again.';
+        res.write(`data: ${JSON.stringify({ type: 'error', message })}\n\n`);
       }
     }
 

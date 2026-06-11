@@ -21,7 +21,13 @@ import {
   getMetrics,
   getMemory,
   getLearningIntelligence,
-  getKnowledgeCoverage
+  getKnowledgeCoverage,
+  generateVisual,
+  generateOutline,
+  compilePresentation,
+  duplicateArtifact,
+  renameArtifact,
+  generateAudio
 } from '../services/workspaceApi';
 
 export const workspaceKeys = {
@@ -250,3 +256,70 @@ export function useWorkspaceCoverageQuery(wid, options = {}) {
     ...options,
   });
 }
+
+export function useGenerateVisualMutation(wid) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data) => generateVisual(wid, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.outputs(wid) });
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.detail(wid) });
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.metrics(wid) });
+    },
+  });
+}
+
+export function useGenerateOutlineMutation(wid) {
+  return useMutation({
+    mutationFn: (data) => generateOutline(wid, data),
+  });
+}
+
+export function useCompilePresentationMutation(wid) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data) => compilePresentation(wid, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.outputs(wid) });
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.detail(wid) });
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.metrics(wid) });
+    },
+  });
+}
+
+export function useDuplicateArtifactMutation(wid) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (oid) => duplicateArtifact(wid, oid),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.outputs(wid) });
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.detail(wid) });
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.metrics(wid) });
+    },
+  });
+}
+
+export function useRenameArtifactMutation(wid) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ oid, title }) => renameArtifact(wid, oid, title),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.outputs(wid) });
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.detail(wid) });
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.metrics(wid) });
+    },
+  });
+}
+
+export function useGenerateAudioMutation(wid) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data) => generateAudio(wid, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.outputs(wid) });
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.detail(wid) });
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.metrics(wid) });
+    },
+  });
+}
+

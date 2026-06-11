@@ -58,15 +58,6 @@ Original Query: "${query}"`;
     const topK = opts.topK || this.adaptiveRetrievalDepth(query);
 
     try {
-      const { default: container } = await import('../../container/workspaceContainer.js');
-      const sources = await container.workspaceSourceRepository.findByWorkspace(workspaceId);
-      
-      const activeStatuses = ['ready', 'completed', 'partially_ready', 'transcript_ready', 'vector_ready', 'graph_ready', 'ready_without_vectors', 'indexing_pending', 'indexing_retrying', 'fully_indexed'];
-      const activeSources = sources.filter(s => 
-        activeStatuses.includes(s.status) && 
-        (!opts.sourceIds || opts.sourceIds.includes(s.id))
-      );
-
       const stopWords = new Set(['the', 'is', 'at', 'which', 'on', 'a', 'an', 'and', 'to', 'of', 'for', 'in', 'that', 'it', 'with', 'as', 'was', 'are', 'be', 'this', 'you', 'i', 'he', 'she', 'they', 'we', 'or', 'but']);
       
       // Tokenize query terms
@@ -76,112 +67,194 @@ Original Query: "${query}"`;
         .filter(t => t.length > 2 && !stopWords.has(t));
 
       const candidates = [];
+      const isLesson = opts.isLesson || (opts.sourceIds && opts.sourceIds.length === 1 && opts.sourceIds[0].startsWith('lesson-'));
 
-      for (const src of activeSources) {
-        const transcriptText = src.transcript || `Source: ${src.title || 'Untitled Source'} - No transcript available.`;
-        const title = src.title || '';
-        const titleLower = title.toLowerCase();
-        
-        let titleMatchBoost = 1.0;
-        for (const term of queryTerms) {
-          if (titleLower.includes(term)) {
-            titleMatchBoost += 0.25;
-          }
-        }
+      if (isLesson) {
+        const { default: container } = await import('../../container.js');
+        const lessonId = opts.sourceIds[0];
+        const lesson = await container.lessonRepository.findById(lessonId);
+        if (lesson) {
+          const chunks = await container.chunkCacheService.getChunks(lessonId) || [];
+          const title = lesson.title || '';
+          const titleLower = title.toLowerCase();
 
-        // Segment dynamic paragraph blocks (approx 800 chars, 150 overlap)
-        const maxLen = 800;
-        const overlap = 150;
-        const paragraphs = transcriptText.split(/\n+/).map(p => p.trim()).filter(p => p.length > 10);
-        
-        let chunkIndex = 0;
-        const textChunks = [];
-        for (const p of paragraphs) {
-          let start = 0;
-          while (start < p.length) {
-            const text = p.substring(start, start + maxLen);
-            textChunks.push({
-              text,
-              chunkIndex: chunkIndex++,
-              sectionTitle: 'Transcript Segment'
-            });
-            start += maxLen - overlap;
-          }
-        }
-
-        // Score blocks
-        for (const chunk of textChunks) {
-          const textLower = chunk.text.toLowerCase();
-          let score = 0;
-          let termsMatched = 0;
-
-          if (textLower.includes(query.toLowerCase())) {
-            score += 10;
-          }
-
+          let titleMatchBoost = 1.0;
           for (const term of queryTerms) {
-            if (textLower.includes(term)) {
-              termsMatched++;
-              const count = textLower.split(term).length - 1;
-              score += count * 1.5;
-
-              if (termsMatched > 1) {
-                score += 2.0;
-              }
+            if (titleLower.includes(term)) {
+              titleMatchBoost += 0.25;
             }
           }
 
-          if (score > 0) {
-            let finalScore = score * titleMatchBoost;
+          for (const chunk of chunks) {
+            const textLower = (chunk.text || '').toLowerCase();
+            let score = 0;
+            let termsMatched = 0;
 
-            // Layer 4: Section-title heuristic matching
-            if (src.topicSegments) {
-              const matchedTopic = src.topicSegments.find(
-                t => chunk.chunkIndex >= t.startChunkIndex && chunk.chunkIndex <= t.endChunkIndex
-              );
-              if (matchedTopic) {
-                const topicTitleLower = (matchedTopic.title || '').toLowerCase();
-                for (const term of queryTerms) {
-                  if (topicTitleLower.includes(term)) {
-                    finalScore += 4.0; // Boost if search query term matches topic/section title
-                  }
-                }
+            if (textLower.includes(query.toLowerCase())) {
+              score += 10;
+            }
 
-                for (const keyword of (matchedTopic.keywords || [])) {
-                  if (query.toLowerCase().includes(keyword.toLowerCase())) {
-                    finalScore += 3.0;
-                  }
+            for (const term of queryTerms) {
+              if (textLower.includes(term)) {
+                termsMatched++;
+                const count = textLower.split(term).length - 1;
+                score += count * 1.5;
+
+                if (termsMatched > 1) {
+                  score += 2.0;
                 }
               }
             }
 
-            // Layer 5: Recent-source prioritization
-            let recencyBoost = 0;
-            if (src.updatedAt) {
-              const hoursSinceUpdate = (Date.now() - new Date(src.updatedAt).getTime()) / (1000 * 60 * 60);
-              if (hoursSinceUpdate < 1) {
-                recencyBoost = 3.0;
-              } else if (hoursSinceUpdate < 24) {
-                recencyBoost = 1.5;
-              } else if (hoursSinceUpdate < 168) {
-                recencyBoost = 0.5;
+            if (score > 0) {
+              let finalScore = score * titleMatchBoost;
+
+              if (lesson.topicSegments) {
+                const matchedTopic = lesson.topicSegments.find(
+                  t => chunk.chunkIndex >= t.startChunkIndex && chunk.chunkIndex <= t.endChunkIndex
+                );
+                if (matchedTopic) {
+                  const topicTitleLower = (matchedTopic.title || '').toLowerCase();
+                  for (const term of queryTerms) {
+                    if (topicTitleLower.includes(term)) {
+                      finalScore += 4.0;
+                    }
+                  }
+                }
+              }
+
+              candidates.push({
+                text: chunk.text,
+                sourceId: lessonId,
+                sourceTitle: title,
+                sourceType: 'video',
+                chunkIndex: chunk.chunkIndex,
+                startTime: chunk.startTime ?? null,
+                endTime: chunk.endTime ?? null,
+                pageNumber: null,
+                sectionTitle: chunk.sectionTitle || 'Transcript Segment',
+                relevance: finalScore,
+                semanticScore: finalScore
+              });
+            }
+          }
+        }
+      } else {
+        const { default: container } = await import('../../container/workspaceContainer.js');
+        const sources = await container.workspaceSourceRepository.findByWorkspace(workspaceId);
+        
+        const activeStatuses = ['ready', 'completed', 'partially_ready', 'transcript_ready', 'vector_ready', 'graph_ready', 'ready_without_vectors', 'indexing_pending', 'indexing_retrying', 'fully_indexed'];
+        const activeSources = sources.filter(s => 
+          activeStatuses.includes(s.status) && 
+          (!opts.sourceIds || opts.sourceIds.includes(s.id))
+        );
+
+        for (const src of activeSources) {
+          const transcriptText = src.transcript || `Source: ${src.title || 'Untitled Source'} - No transcript available.`;
+          const title = src.title || '';
+          const titleLower = title.toLowerCase();
+          
+          let titleMatchBoost = 1.0;
+          for (const term of queryTerms) {
+            if (titleLower.includes(term)) {
+              titleMatchBoost += 0.25;
+            }
+          }
+
+          // Segment dynamic paragraph blocks (approx 800 chars, 150 overlap)
+          const maxLen = 800;
+          const overlap = 150;
+          const paragraphs = transcriptText.split(/\n+/).map(p => p.trim()).filter(p => p.length > 10);
+          
+          let chunkIndex = 0;
+          const textChunks = [];
+          for (const p of paragraphs) {
+            let start = 0;
+            while (start < p.length) {
+              const text = p.substring(start, start + maxLen);
+              textChunks.push({
+                text,
+                chunkIndex: chunkIndex++,
+                sectionTitle: 'Transcript Segment'
+              });
+              start += maxLen - overlap;
+            }
+          }
+
+          // Score blocks
+          for (const chunk of textChunks) {
+            const textLower = chunk.text.toLowerCase();
+            let score = 0;
+            let termsMatched = 0;
+
+            if (textLower.includes(query.toLowerCase())) {
+              score += 10;
+            }
+
+            for (const term of queryTerms) {
+              if (textLower.includes(term)) {
+                termsMatched++;
+                const count = textLower.split(term).length - 1;
+                score += count * 1.5;
+
+                if (termsMatched > 1) {
+                  score += 2.0;
+                }
               }
             }
-            finalScore += recencyBoost;
 
-            candidates.push({
-              text: chunk.text,
-              sourceId: src.id,
-              sourceTitle: title,
-              sourceType: src.type,
-              chunkIndex: chunk.chunkIndex,
-              startTime: null,
-              endTime: null,
-              pageNumber: null,
-              sectionTitle: chunk.sectionTitle,
-              relevance: finalScore,
-              semanticScore: finalScore
-            });
+            if (score > 0) {
+              let finalScore = score * titleMatchBoost;
+
+              // Layer 4: Section-title heuristic matching
+              if (src.topicSegments) {
+                const matchedTopic = src.topicSegments.find(
+                  t => chunk.chunkIndex >= t.startChunkIndex && chunk.chunkIndex <= t.endChunkIndex
+                );
+                if (matchedTopic) {
+                  const topicTitleLower = (matchedTopic.title || '').toLowerCase();
+                  for (const term of queryTerms) {
+                    if (topicTitleLower.includes(term)) {
+                      finalScore += 4.0; // Boost if search query term matches topic/section title
+                    }
+                  }
+
+                  for (const keyword of (matchedTopic.keywords || [])) {
+                    if (query.toLowerCase().includes(keyword.toLowerCase())) {
+                      finalScore += 3.0;
+                    }
+                  }
+                }
+              }
+
+              // Layer 5: Recent-source prioritization
+              let recencyBoost = 0;
+              if (src.updatedAt) {
+                const hoursSinceUpdate = (Date.now() - new Date(src.updatedAt).getTime()) / (1000 * 60 * 60);
+                if (hoursSinceUpdate < 1) {
+                  recencyBoost = 3.0;
+                } else if (hoursSinceUpdate < 24) {
+                  recencyBoost = 1.5;
+                } else if (hoursSinceUpdate < 168) {
+                  recencyBoost = 0.5;
+                }
+              }
+              finalScore += recencyBoost;
+
+              candidates.push({
+                text: chunk.text,
+                sourceId: src.id,
+                sourceTitle: title,
+                sourceType: src.type,
+                chunkIndex: chunk.chunkIndex,
+                startTime: null,
+                endTime: null,
+                pageNumber: null,
+                sectionTitle: chunk.sectionTitle,
+                relevance: finalScore,
+                semanticScore: finalScore
+              });
+            }
           }
         }
       }
@@ -220,7 +293,13 @@ Original Query: "${query}"`;
    */
   async hybridSearch(workspaceId, query, opts = {}) {
     const startMs = Date.now();
-    const topK = opts.topK || this.adaptiveRetrievalDepth(query);
+    let topK = opts.topK || this.adaptiveRetrievalDepth(query);
+    if (opts.assetType === 'interview_questions') {
+      if (!opts.topK) {
+        topK = 15;
+      }
+      logger.info('[Studio Search] Broader semantic search active for interview questions asset', { query, topK });
+    }
 
     if (!query || typeof query !== 'string') {
       throw new AppError('Search query is required', 400);
@@ -236,7 +315,9 @@ Original Query: "${query}"`;
       }
 
       // AI Semantic query expansion
-      const expandedQuery = await this.rewriteQuery(query);
+      const expandedQuery = opts.skipQueryExpansion
+        ? query
+        : await this.rewriteQuery(query);
 
       // LEVEL 1: Semantic Vector Search
       let queryEmbedding;

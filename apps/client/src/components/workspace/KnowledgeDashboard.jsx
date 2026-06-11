@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AppIcon from '../AppIcon';
 import WorkspaceInfrastructureHealthPanel from './WorkspaceInfrastructureHealthPanel';
+import LearningProgressPanel from './LearningProgressPanel';
 
 // ============================================================================
 // COMPONENT: Learning Intelligence Hub Dashboard
@@ -542,14 +543,17 @@ export default function KnowledgeDashboard({
           </div>
         </div>
 
+        {/* Learning Progress Panel */}
+        <LearningProgressPanel learning={learning} />
+
         {/* Concept Cards Directory */}
-        <div className="lg:col-span-2 bg-[#06070a]/40 border border-white/5 rounded-2xl p-5 hover:border-orange-500/10 transition-all duration-300 space-y-4">
+        <div className="bg-[#06070a]/40 border border-white/5 rounded-2xl p-5 hover:border-orange-500/10 transition-all duration-300 space-y-4">
           <div className="flex items-center justify-between border-b border-white/5 pb-2.5 shrink-0">
             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Concept Cards Directory</span>
             <AppIcon name="book" size={12} className="text-orange-400" />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-72 overflow-y-auto pr-1 scrollbar-thin">
+          <div className="grid grid-cols-1 gap-3 max-h-72 overflow-y-auto pr-1 scrollbar-thin">
             {nodes.map((node, idx) => {
               const matchedMastery = masteryList.find(m => m.clusterName.toLowerCase() === node.displayName.toLowerCase());
               const level = matchedMastery?.masteryLevel || 0;

@@ -79,46 +79,7 @@ export default function WorkspaceSidebar({
         )}
       </div>
 
-      {/* Navigation Options (only visible if a workspace is loaded) */}
-      {activeWorkspaceId && (
-        <div className="px-3 py-4 space-y-1 border-b border-white/5">
-          {[
-            { id: 'chat', label: 'Grounding Playground', icon: 'message' },
-            { id: 'studio', label: 'Studio Assets', icon: 'sparkles' },
-            { id: 'dashboard', label: 'Learning Intelligence', icon: 'graduation' },
-          ].map((item) => {
-            const isActive = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => onSelectTab(item.id)}
-                className={`relative w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-start'
-                  } gap-3 px-3 py-2.5 text-xs font-semibold rounded-xl transition duration-200 cursor-pointer ${isActive ? 'text-orange-300' : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                title={isCollapsed ? item.label : undefined}
-              >
-                {isActive && (
-                  <motion.div
-                    layoutId="activeTabPill"
-                    className="absolute inset-0 bg-orange-500/10 border border-orange-500/15 rounded-xl -z-10"
-                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                  />
-                )}
-                <AppIcon name={item.icon} size={15} className={isActive ? 'text-orange-400' : ''} />
-                {!isCollapsed && (
-                  <motion.span
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="truncate"
-                  >
-                    {item.label}
-                  </motion.span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      )}
+
 
       {/* Workspaces Scrollable List */}
       <div className="flex-1 flex flex-col min-h-0 pt-4">
@@ -199,10 +160,6 @@ export default function WorkspaceSidebar({
             <span className="font-semibold text-slate-300">{currentSources} / {sourceLimit}</span>
           </div>
 
-          <div className="flex items-center justify-between text-[10px]">
-            <span className="font-medium text-slate-500">Knowledge Nodes</span>
-            <span className="font-semibold text-slate-300">{currentWorkspace.nodeCount || 0}</span>
-          </div>
 
           <div className="flex items-center justify-between text-[10px]">
             <span className="font-medium text-slate-500">Recent Update</span>

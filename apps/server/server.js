@@ -3,6 +3,7 @@ import app from './src/app.js';
 import config from './src/config/env.js';
 import { initializeFirebase } from './src/config/firebase.js';
 import logger from './src/loggers/logger.js';
+import { runStartupHealthChecks } from './src/config/startupHealthCheck.js';
 
 // Dynamically register background queue workers based on configuration
 const runWorkers = process.env.RUN_WORKERS !== 'false';
@@ -29,6 +30,11 @@ process.on('unhandledRejection', (reason) => {
 initializeFirebase();
 
 if (runApi) {
+  runStartupHealthChecks().catch((err) => {
+    logger.error('[STARTUP HEALTH CHECK] Uncaught exception during checks. Refusing READY state.', { error: err.message });
+    process.exit(1);
+  });
+
   const server = app.listen(config.port, () => {
     logger.info(`SheryAI Backend running on port ${config.port}`);
     logger.info(`Environment: ${config.nodeEnv}`);

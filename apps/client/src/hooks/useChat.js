@@ -72,8 +72,8 @@ export function useChat(lessonId) {
               return;
             } else if (event.type === 'done') {
               setMessages(prev => [...prev, {
-                role: 'assistant', content: fullText,
-                followUps: receivedFollowUps, id: uuidv4(),
+                role: 'assistant', content: event.fullResponse || fullText,
+                followUps: event.followUps || receivedFollowUps, id: uuidv4(),
               }]);
               setCurrentStreamText('');
               setIsStreaming(false);
@@ -82,6 +82,43 @@ export function useChat(lessonId) {
           } catch { /* ignore malformed SSE */ }
         }
       }
+
+      // Process any remaining data in the buffer after stream ends
+      if (buffer && buffer.trim()) {
+        const line = buffer.trim();
+        if (line.startsWith('data: ')) {
+          try {
+            const event = JSON.parse(line.slice(6));
+            if (event.type === 'token') {
+              fullText += event.content;
+            } else if (event.type === 'followUps') {
+              receivedFollowUps = event.items || [];
+              setFollowUps(receivedFollowUps);
+            } else if (event.type === 'done') {
+              setMessages(prev => [...prev, {
+                role: 'assistant', content: event.fullResponse || fullText,
+                followUps: event.followUps || receivedFollowUps, id: uuidv4(),
+              }]);
+              setCurrentStreamText('');
+              setIsStreaming(false);
+              return;
+            }
+          } catch { /* ignore */ }
+        }
+      }
+
+      // Fallback finalization if 'done' event wasn't processed
+      setIsStreaming(false);
+      setMessages(prev => {
+        if (prev.some(m => m.role === 'assistant' && m.content === fullText)) {
+          return prev;
+        }
+        return [...prev, {
+          role: 'assistant', content: fullText,
+          followUps: receivedFollowUps, id: uuidv4(),
+        }];
+      });
+      setCurrentStreamText('');
     } catch (err) {
       if (err.name === 'AbortError') return;
       setError(err.message || 'Connection lost. Please try again.');
