@@ -164,7 +164,7 @@ class NvidiaChatProvider {
       try {
         logger.info(`Attempting content generation with model: ${model} (fallbackActivated: ${fallbackActivated})`);
         
-        const timeoutMs = this.studentTutorOnly ? 8000 : 3000;
+        const timeoutMs = this.studentTutorOnly ? 8000 : 30000;
         const timeoutPromise = new Promise((_, reject) => 
           setTimeout(() => reject(new Error(`Model request timeout (${timeoutMs}ms exceeded) for ${model}`)), timeoutMs)
         );

@@ -12,6 +12,8 @@ import ApiResponse from '../utils/ApiResponse.js';
 import logger from '../loggers/logger.js';
 import config from '../config/env.js';
 
+import workspaceController from '../controllers/workspace.controller.js';
+
 const router = express.Router();
 
 const upload = multer({
@@ -52,14 +54,7 @@ async function storeVideoFile(workspaceId, sourceId, file) {
 
 
 // Hidden diagnostics health panel route
-router.get('/health', async (req, res, next) => {
-  try {
-    const { providerHealthStatus } = await import('../config/providerStatusState.js');
-    res.json(providerHealthStatus);
-  } catch (error) {
-    next(error);
-  }
-});
+router.get('/health', workspaceController.getHealth);
 
 // Apply global Workspace User Identification header check to all routes
 router.use(getWorkspaceUser);
@@ -67,104 +62,19 @@ router.use(getWorkspaceUser);
 // ─── WORKSPACE CRUD ──────────────────────────────────────────────────────────
 
 // 1. List user workspaces
-router.get('/', workspaceApiLimiter, async (req, res, next) => {
-  try {
-    const list = await workspaceContainer.workspaceRepository.findByUser(req.userId);
-    res.json(ApiResponse.success({ list }, 'Workspaces fetched successfully'));
-  } catch (error) {
-    next(error);
-  }
-});
+router.get('/', workspaceApiLimiter, workspaceController.listWorkspaces);
 
 // 2. Create workspace
-router.post('/', workspaceApiLimiter, checkWorkspaceLimits, async (req, res, next) => {
-  try {
-    const { name, emoji } = req.body;
-    if (!name?.trim()) {
-      return res.status(400).json(ApiResponse.error('Workspace name is required.', 400));
-    }
-    const workspace = await workspaceContainer.workspaceRepository.create({
-      name: name.trim(),
-      emoji: emoji || '🧠',
-      userId: req.userId,
-    });
-    res.status(201).json(ApiResponse.success(workspace, 'Workspace created successfully'));
-  } catch (error) {
-    next(error);
-  }
-});
+router.post('/', workspaceApiLimiter, checkWorkspaceLimits, workspaceController.createWorkspace);
 
 // 3. Get workspace detail (includes sources and recent outputs)
-router.get('/:wid', workspaceApiLimiter, requireWorkspaceOwnership, async (req, res, next) => {
-  try {
-    const wid = req.params.wid;
-    const sources = await workspaceContainer.workspaceSourceRepository.findByWorkspace(wid);
-    const outputs = await workspaceContainer.workspaceOutputRepository.findByWorkspace(wid);
-    
-    res.json(ApiResponse.success({
-      workspace: req.workspace,
-      sources,
-      outputs: outputs.slice(0, 10), // return last 10 outputs
-    }, 'Workspace detail fetched'));
-  } catch (error) {
-    next(error);
-  }
-});
+router.get('/:wid', workspaceApiLimiter, requireWorkspaceOwnership, workspaceController.getWorkspace);
 
 // 4. Update workspace name/emoji
-router.patch('/:wid', workspaceApiLimiter, requireWorkspaceOwnership, async (req, res, next) => {
-  try {
-    const { name, emoji } = req.body;
-    const updates = {};
-    if (name?.trim()) updates.name = name.trim();
-    if (emoji) updates.emoji = emoji;
-
-    const updated = await workspaceContainer.workspaceRepository.update(req.params.wid, updates);
-    res.json(ApiResponse.success(updated, 'Workspace updated successfully'));
-  } catch (error) {
-    next(error);
-  }
-});
+router.patch('/:wid', workspaceApiLimiter, requireWorkspaceOwnership, workspaceController.updateWorkspace);
 
 // 5. Delete workspace (cascade purge vectors and sources)
-router.delete('/:wid', workspaceApiLimiter, requireWorkspaceOwnership, async (req, res, next) => {
-  try {
-    const wid = req.params.wid;
-    
-    // Purge Qdrant vectors
-    await workspaceContainer.embeddingService.deleteWorkspaceVectors(wid);
-
-    // Delete nested subcollections (handled sequentially for simplicity in local environments)
-    const sources = await workspaceContainer.workspaceSourceRepository.findByWorkspace(wid);
-    for (const src of sources) {
-      await workspaceContainer.workspaceSourceRepository.delete(wid, src.id);
-    }
-
-    const chats = await workspaceContainer.workspaceChatRepository.findByWorkspace(wid);
-    for (const chat of chats) {
-      await workspaceContainer.workspaceChatRepository.delete(wid, chat.id);
-    }
-
-    const outputs = await workspaceContainer.workspaceOutputRepository.findByWorkspace(wid);
-    for (const out of outputs) {
-      await workspaceContainer.workspaceOutputRepository.delete(wid, out.id);
-    }
-
-    // Cascade delete local storage directory
-    try {
-      await workspaceContainer.workspaceStorageService.deleteWorkspaceDir(wid);
-    } catch (storageErr) {
-      logger.error('Failed to purge local storage directory for workspace', { wid, error: storageErr.message });
-    }
-
-    // Delete base document
-    await workspaceContainer.workspaceRepository.delete(wid);
-
-    res.json(ApiResponse.success({ success: true }, 'Workspace deleted and cascade purged successfully'));
-  } catch (error) {
-    next(error);
-  }
-});
+router.delete('/:wid', workspaceApiLimiter, requireWorkspaceOwnership, workspaceController.deleteWorkspace);
 
 
 // ─── SOURCES MANAGEMENT ──────────────────────────────────────────────────────

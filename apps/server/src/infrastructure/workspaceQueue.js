@@ -1,9 +1,6 @@
 import { Queue, QueueEvents } from 'bullmq';
 import { redisConnection } from './redis.js';
 
-console.log("REDIS INIT SOURCE: workspaceQueue.js");
-console.log("Runtime REDIS_URL:", process.env.REDIS_URL);
-
 export const workspaceIngestionQueue = new Queue('workspace-ingestion-queue', {
   connection: redisConnection,
   defaultJobOptions: {

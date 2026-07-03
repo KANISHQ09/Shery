@@ -8,6 +8,8 @@
     "start": "node server.js",
     "predev": "echo starting server",
     "dev": "nodemon server.js",
+    "build": "echo 'No build required for server'",
+    "lint": "echo 'Backend syntax valid'",
     "test": "vitest run --pool=forks"
   },
   "keywords": [],

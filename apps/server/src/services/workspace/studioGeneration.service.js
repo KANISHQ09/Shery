@@ -12,9 +12,9 @@ class StudioGenerationService {
     workspaceSourceRepository,
     chatProvider,
     geminiFlash,
-    vectorSearchTimeout = 1500,
-    llmTimeout = 6000,
-    overallTimeout = 9500,
+    vectorSearchTimeout = 4000,
+    llmTimeout = 30000,
+    overallTimeout = 40000,
   }) {
     this.vectorSearch = vectorSearchService;
     this.contextManager = contextManagerService;
@@ -58,6 +58,64 @@ class StudioGenerationService {
     }
 
     throw new AppError('No AI provider available for studio generation.', 503);
+  }
+
+  autoCloseXmlTags(text) {
+    if (!text) return text;
+
+    const allowedTags = [
+      'Section', 'PrerequisiteNotice', 'ChapterBlock', 'ConceptDefinitionCard', 
+      'KeyInsightPanel', 'SummaryBanner', 'ImportantTermHighlight', 'ExampleWalkthrough', 
+      'FormulaCard', 'RevisionChecklist', 'PracticePromptCard', 'MindMapNode', 
+      'QuizQuestion', 'WhyYouShouldCare', 'ExecutiveOverview', 'DifficultyHeatmap', 
+      'MisconceptionCard', 'MentalModel', 'ApplicationCard', 'InterviewQuestion', 
+      'ChallengeCard', 'SourceEvidencePanel', 'TeachBackQuestion', 'FurtherExploration'
+    ];
+
+    let modifiedText = text;
+    const lastOpenBracket = text.lastIndexOf('<');
+    const lastCloseBracket = text.lastIndexOf('>');
+
+    if (lastOpenBracket > lastCloseBracket) {
+      modifiedText = text.substring(0, lastOpenBracket);
+    }
+
+    const regex = new RegExp(`<(\\/?)(${allowedTags.join('|')})\\b([^>]*)(>?)`, 'gi');
+    const stack = [];
+    let matchArr;
+
+    while ((matchArr = regex.exec(modifiedText)) !== null) {
+      const isClosing = matchArr[1] === '/';
+      const tagName = matchArr[2];
+      const attrs = matchArr[3] || '';
+      const hasClosingBracket = matchArr[4] === '>';
+
+      if (!hasClosingBracket) {
+        modifiedText = modifiedText.substring(0, matchArr.index);
+        break;
+      }
+
+      if (attrs.trim().endsWith('/')) {
+        continue;
+      }
+
+      if (isClosing) {
+        const index = stack.lastIndexOf(tagName);
+        if (index !== -1) {
+          stack.splice(index);
+        }
+      } else {
+        stack.push(tagName);
+      }
+    }
+
+    let closedSuffix = '';
+    while (stack.length > 0) {
+      const openTag = stack.pop();
+      closedSuffix += `\n</${openTag}>`;
+    }
+
+    return modifiedText + closedSuffix;
   }
 
   computeTokenBudget(depth, sourceCount, chunkCount) {
@@ -332,7 +390,7 @@ class StudioGenerationService {
           }
 
           const finalOutput = await this.outputRepo.update(workspaceId, outputId, {
-            content,
+            content: this.autoCloseXmlTags(content),
             sourcesUsed,
             status: 'ready',
             depth,
@@ -710,7 +768,7 @@ class StudioGenerationService {
       // No warning banner prepended for interview_questions — clean UX by design.
 
       const finalOutput = await this.outputRepo.update(workspaceId, outputId, {
-        content,
+        content: type === 'flashcards' || type === 'mermaid_diagram' ? content : this.autoCloseXmlTags(content),
         sourcesUsed,
         status: 'ready',
         depth,
@@ -756,14 +814,11 @@ class StudioGenerationService {
     ]);
     const rejectedWords = new Set([
       'build', 'perform', 'prepare', 'time', 'trust', 'research', 'develop', 'create', 'connect', 'understand',
-      'plan', 'workflow', 'real', 'bug', 'feasibility', 'integration', 'implement', 'configure', 'setup',
-      'deploy', 'monitor', 'test', 'debug', 'optimize', 'improve', 'enhance', 'evaluate', 'assess', 'review',
-      'check', 'verify', 'validate', 'assert', 'compile', 'design', 'define', 'study', 'explain', 'learn', 'teach',
-      'active', 'workspace', 'session', 'system', 'architecture', 'client', 'server', 'microservice', 'database',
-      'layer', 'infrastructure', 'process', 'approach', 'solution', 'concept', 'example', 'sample', 'details',
-      'information', 'content', 'overview', 'summary', 'revision', 'checklist', 'topic', 'focus', 'guide',
-      'interactive', 'map', 'simulation', 'simulator', 'preparation', 'tier', 'readiness', 'score', 'gold',
-      'standard', 'expert', 'deep', 'quick', 'integrate', 'prototype'
+      'plan', 'real', 'bug', 'feasibility', 'setup', 'evaluate', 'assess', 'review',
+      'check', 'verify', 'validate', 'assert', 'compile', 'study', 'learn', 'teach',
+      'active', 'workspace', 'session', 'sample', 'revision', 'checklist', 'focus',
+      'simulation', 'simulator', 'preparation', 'tier', 'readiness', 'score', 'gold',
+      'standard', 'quick'
     ]);
 
     const techKeywords = [

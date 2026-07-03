@@ -4,10 +4,6 @@ import dotenv from 'dotenv';
 // Immediately bootstrap environment to prevent any import order race conditions
 dotenv.config();
 
-console.log("REDIS INIT SOURCE: redis.js");
-console.log("Runtime REDIS_URL:", process.env.REDIS_URL);
-console.log("FULL RAW REDIS_URL:", process.env.REDIS_URL);
-
 if (!process.env.REDIS_URL) {
   throw new Error('REDIS_URL is missing. Production systems require REDIS_URL to be set.');
 }

@@ -50,15 +50,19 @@ firebase-export-*/
 .turbo/
 
 # ── Editor ────────────────────────────────────────────────────────────────────
-.vscode/settings.json
+.vscode/
 .idea/
 *.sublime-project
 *.sublime-workspace
 
-# ── Testing ───────────────────────────────────────────────────────────────────
+# ── Testing & Scratch ──────────────────────────────────────────────────────────
 coverage/
 .nyc_output/
+test-results/
+scratch/
+apps/server/scratch/
 
 # ── Misc ─────────────────────────────────────────────────────────────────────
 *.tsbuildinfo
 .eslintcache
+

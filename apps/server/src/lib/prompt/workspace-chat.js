@@ -678,8 +678,8 @@ Enforce:
 Ensure no placeholder content, duplicate cards, or answers shorter than 15 characters are generated.`,
 
     faq: `Create a high-value FAQ document of the 8 most critical questions a student would ask about these materials.
-Structure each FAQ item using a <PracticePromptCard question="Question" answer="Detailed Answer" difficulty="medium"> tag.
-Inside the PracticePromptCard, provide the context, detailed grounding, and a source citation.`,
+Structure each FAQ item using a <PracticePromptCard question="Question" difficulty="medium">Detailed Answer with context, grounding, and source citation</PracticePromptCard> tag.
+Do NOT place the detailed answer in an "answer" attribute; write the answer inside the tag body.`,
 
     mermaid_diagram: `Generate a structured Mermaid Knowledge Diagram that visualises the key concepts, relationships, and dependencies from the grounding context.
 Choose the most appropriate diagram type for the content:
@@ -706,7 +706,8 @@ graph TD
   C --> H["Memory"]`,
 
     key_insights: `Extract the top 10 most profound, high-impact Key Insights across the provided context.
-For each insight, wrap it in a <KeyInsightPanel title="Core Insight Statement">Write a 2-3 sentence deep synthesis explanation and citations</KeyInsightPanel> tag.`,
+For each insight, wrap it in a <KeyInsightPanel title="Core Insight">Core Insight Statement followed by a 2-3 sentence deep synthesis explanation and citations</KeyInsightPanel> tag.
+Do NOT place the full insight statement in the "title" attribute; write it inside the tag body.`,
 
     key_definitions: `Compile a Glossary of all major technical definitions, equations, or specialized terms.
 For each definition, wrap it in a <ConceptDefinitionCard term="Term Name">Write a detailed explanation of the term with source citations</ConceptDefinitionCard> tag.`,
