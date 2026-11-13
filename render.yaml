@@ -1,0 +1,95 @@
+# Render Blueprint for the SheryAI backend (API + lesson ingestion worker in one service).
+# Render dashboard → New → Blueprint → pick this repo. Values marked `sync: false` are
+# prompted for once at creation (copy them from apps/server/.env); they are never stored in git.
+services:
+  - type: web
+    name: sheryai-server
+    runtime: docker
+    plan: free
+    # The Dockerfile builds from the repo root because the npm workspace lockfile lives there.
+    dockerfilePath: ./apps/server/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - apps/server/**
+        - package.json
+        - package-lock.json
+        - render.yaml
+    envVars:
+      # ── Runtime ──────────────────────────────────────────────
+      - key: NODE_ENV
+        value: production
+      - key: RUN_API
+        value: "true"
+      - key: RUN_WORKERS
+        value: "true"
+      - key: TRUST_PROXY
+        value: "1"
+
+      # ── Frontend / CORS (set to your Vercel URL after the frontend is deployed) ──
+      - key: FRONTEND_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: ALLOW_VERCEL_PREVIEWS
+        value: "false"
+
+      # ── Demo protection ──────────────────────────────────────
+      - key: DEMO_ADMIN_PASSCODE
+        sync: false
+
+      # ── Firebase Admin (paste the one-line service account JSON) ──
+      - key: FIREBASE_SERVICE_ACCOUNT
+        sync: false
+
+      # ── Redis (Upstash, rediss://...) ────────────────────────
+      - key: REDIS_URL
+        sync: false
+
+      # ── Qdrant Cloud ─────────────────────────────────────────
+      - key: QDRANT_URL
+        sync: false
+      - key: QDRANT_API_KEY
+        sync: false
+
+      # ── NVIDIA NIM ───────────────────────────────────────────
+      - key: NVIDIA_API_KEY
+        sync: false
+      - key: NVIDIA_MODEL
+        value: nvidia/nemotron-3.5-lightning-30b-a3b
+      - key: CHAT_PROVIDER
+        value: nvidia
+      - key: CHAT_MODEL
+        value: nvidia/nemotron-3.5-lightning-30b-a3b
+      - key: NVIDIA_EMBEDDING_MODEL
+        value: nvidia/nemotron-3.5-embed-8b
+
+      # ── Gemini (optional) ────────────────────────────────────
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-3.5-flash-lite
+
+      # ── AssemblyAI ───────────────────────────────────────────
+      - key: ASSEMBLYAI_API_KEY
+        sync: false
+      - key: ASSEMBLYAI_SPEECH_MODELS
+        value: universal-3-pro,universal-2
+      - key: TRANSCRIPTION_PROVIDER
+        value: assemblyai
+
+      # ── Video storage (Supabase; free plan caps files at ~50 MB) ──
+      - key: STORAGE_PROVIDER
+        value: supabase
+      - key: MAX_VIDEO_UPLOAD_MB
+        value: "50"
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: lesson-videos
+      - key: SUPABASE_SIGNED_URL_TTL_SECONDS
+        value: "3600"
