@@ -4,8 +4,6 @@ import dotenv from 'dotenv';
 // Fail-safe env loading
 dotenv.config();
 
-console.log("QDRANT_URL:", process.env.QDRANT_URL);
-console.log("QDRANT_API_KEY exists:", !!process.env.QDRANT_API_KEY);
 
 if (!process.env.QDRANT_URL) {
   throw new Error('QDRANT_URL is missing. Production systems require QDRANT_URL to be set.');

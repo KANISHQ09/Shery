@@ -12,6 +12,9 @@ import AppError from './utils/AppError.js';
 
 const app = express();
 
+// Behind a hosting proxy, use X-Forwarded-For so rate limits apply per visitor, not per proxy.
+app.set('trust proxy', config.trustProxy);
+
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
@@ -25,7 +28,7 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Range', 'x-demo-role'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Range', 'x-demo-role', 'x-visitor-id', 'x-demo-passcode'],
   exposedHeaders: ['Accept-Ranges', 'Content-Length', 'Content-Range', 'X-Chat-Session-Id', 'X-Request-Id', 'X-Chat-Id'],
 }));
 

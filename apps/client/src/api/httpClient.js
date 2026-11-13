@@ -1,9 +1,6 @@
 import axios from 'axios';
 import { API_BASE_URL, API_DIRECT_URL } from '../config/env';
-
-function getRole() {
-  return localStorage.getItem('demo_role') || 'student';
-}
+import { demoHeaders } from './demoIdentity';
 
 function createClient(baseURL) {
   const client = axios.create({
@@ -15,7 +12,7 @@ function createClient(baseURL) {
 
   client.interceptors.request.use((config) => {
     config.headers = config.headers || {};
-    config.headers['x-demo-role'] = getRole();
+    Object.assign(config.headers, demoHeaders());
 
     if (config.data instanceof FormData) {
       delete config.headers['Content-Type'];

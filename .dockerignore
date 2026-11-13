@@ -1,0 +1,11 @@
+# Keep secrets and heavy folders out of the Docker build context
+**/.env
+**/.env.*
+!**/.env.example
+**/node_modules
+**/dist
+**/uploads
+.git
+.turbo
+**/coverage
+**/*.log

@@ -2,6 +2,8 @@ import fs from 'fs';
 import asyncHandler from '../utils/asyncHandler.js';
 import ApiResponse from '../utils/ApiResponse.js';
 import AppError from '../utils/AppError.js';
+import config from '../config/env.js';
+import { hasDemoAdminPasscode } from '../middleware/demoAdmin.js';
 
 class LessonController {
   constructor(lessonService) {
@@ -11,6 +13,22 @@ class LessonController {
   assertInstructor(req) {
     if (req.user?.role !== 'instructor') {
       throw new AppError('Only instructors can delete lessons.', 403);
+    }
+  }
+
+  /**
+   * Demo protection (always on in production, or locally when DEMO_ADMIN_PASSCODE is set): a visitor may only delete lessons they
+   * created themselves; the team passcode is required to delete anyone else's (e.g. prepared demo lessons).
+   */
+  async assertCanDelete(req, lessonId) {
+    this.assertInstructor(req);
+    if (!config.demoProtection || hasDemoAdminPasscode(req)) return;
+
+    const lesson = await this.lessonService.getById(lessonId);
+    if (lesson.createdBy !== req.user.uid) {
+      throw new AppError('This lesson is protected for the demo. Only lessons you added can be deleted.', 403, {
+        type: 'demo_protected',
+      });
     }
   }
 
@@ -55,14 +73,40 @@ class LessonController {
   });
 
   localUploadEmulator = asyncHandler(async (req, res) => {
+    // Development-only stand-in for cloud signed uploads. Disabled with cloud storage, and it only
+    // accepts the exact file a pending lesson is waiting for, up to the configured size limit.
+    if (config.storageProvider !== 'local') {
+      throw new AppError('Not found', 404);
+    }
+
     const { fileName } = req.params;
+    const lessonId = fileName.replace(/\.[a-z0-9]+$/i, '');
+    const lesson = await this.lessonService.lessonRepository.findById(lessonId).catch(() => null);
+    if (!lesson || lesson.storagePath !== `local:${fileName}`) {
+      throw new AppError('No pending upload for this file.', 404);
+    }
+
+    const maxBytes = config.maxVideoUploadMb * 1024 * 1024;
+    const declared = Number(req.headers['content-length'] || 0);
+    if (declared > maxBytes) {
+      throw new AppError(`File too large. Maximum upload size is ${config.maxVideoUploadMb} MB.`, 413);
+    }
+
     const localPath = this.lessonService.videoStorageService.resolveLocalVideoPath(`local:${fileName}`);
-    
-    // Pipe request binary stream directly to file on disk
     const writeStream = fs.createWriteStream(localPath);
-    req.pipe(writeStream);
+    let received = 0;
 
     await new Promise((resolve, reject) => {
+      req.on('data', (chunk) => {
+        received += chunk.length;
+        if (received > maxBytes) {
+          req.unpipe(writeStream);
+          writeStream.destroy();
+          fs.promises.unlink(localPath).catch(() => {});
+          reject(new AppError(`File too large. Maximum upload size is ${config.maxVideoUploadMb} MB.`, 413));
+        }
+      });
+      req.pipe(writeStream);
       writeStream.on('finish', resolve);
       req.on('error', reject);
       writeStream.on('error', reject);
@@ -161,18 +205,21 @@ class LessonController {
   });
 
   deleteFailed = asyncHandler(async (req, res) => {
-    const result = await this.lessonService.deleteFailedByCourse(req.query.courseId);
+    this.assertInstructor(req);
+    // Without the team passcode, the bulk cleanup only removes the visitor's own failed lessons.
+    const onlyCreatedBy = config.demoProtection && !hasDemoAdminPasscode(req) ? req.user.uid : null;
+    const result = await this.lessonService.deleteFailedByCourse(req.query.courseId, { onlyCreatedBy });
     res.json(ApiResponse.success(result, 'Failed lessons deleted'));
   });
 
   deleteFailedLesson = asyncHandler(async (req, res) => {
-    this.assertInstructor(req);
+    await this.assertCanDelete(req, req.params.lessonId);
     const result = await this.lessonService.deleteFailedLesson(req.params.lessonId);
     res.json(ApiResponse.success(result, 'Failed lesson deleted'));
   });
 
   deleteLesson = asyncHandler(async (req, res) => {
-    this.assertInstructor(req);
+    await this.assertCanDelete(req, req.params.lessonId);
     const result = await this.lessonService.deleteLesson(req.params.lessonId);
     res.json(ApiResponse.success(result, 'Lesson deleted'));
   });

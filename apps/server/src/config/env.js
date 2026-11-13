@@ -2,6 +2,14 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+function parseTrustProxy(value, isProduction) {
+  if (value === undefined || value === '') return isProduction ? 1 : false;
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  const hops = Number(value);
+  return Number.isInteger(hops) && hops >= 0 ? hops : value; // number of hops, or an IP/subnet list
+}
+
 function splitCsv(value = '') {
   return value
     .split(',')
@@ -31,6 +39,15 @@ class EnvConfig {
     this.r2AccessKeyId = source.R2_ACCESS_KEY_ID || '';
     this.r2SecretAccessKey = source.R2_SECRET_ACCESS_KEY || '';
     this.r2Bucket = source.R2_BUCKET || '';
+    // Demo protection: when set, only requests with this passcode (header x-demo-passcode)
+    // may delete lessons created by someone else. Leave empty for local development.
+    this.demoAdminPasscode = source.DEMO_ADMIN_PASSCODE || '';
+    // Fail closed: lesson protection is always on in production (even if the passcode was
+    // forgotten), and locally whenever a passcode is configured.
+    this.demoProtection = Boolean(this.demoAdminPasscode) || this.nodeEnv === 'production';
+    // Number of reverse proxies in front of the app (Railway/Render/Cloud Run = 1). Needed so
+    // rate limiting sees each visitor's real IP. Defaults: 1 in production, off locally.
+    this.trustProxy = parseTrustProxy(source.TRUST_PROXY, this.nodeEnv === 'production');
     this.maxVideoUploadMb = Number(source.MAX_VIDEO_UPLOAD_MB || 100);
     this.assemblyAiApiKey = source.ASSEMBLYAI_API_KEY || '';
     this.assemblyAiSpeechModels = splitCsv(source.ASSEMBLYAI_SPEECH_MODELS || 'universal-3-pro, universal-2');

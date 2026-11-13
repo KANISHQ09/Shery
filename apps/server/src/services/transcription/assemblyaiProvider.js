@@ -8,6 +8,13 @@ import AppError from '../../utils/AppError.js';
 
 const { AssemblyAI } = assemblyPkg;
 
+// Signed media URLs carry access tokens; only ever log the host.
+const safeHost = (url) => {
+  if (typeof url !== 'string') return null;
+  if (url.startsWith('data:')) return 'data-uri';
+  try { return new URL(url).host; } catch { return 'invalid-url'; }
+};
+
 class AssemblyAiProvider extends BaseTranscriptionProvider {
   constructor() {
     super();
@@ -33,7 +40,7 @@ class AssemblyAiProvider extends BaseTranscriptionProvider {
       if (!uploadUrl || typeof uploadUrl !== 'string') {
         throw new Error(`AssemblyAI files.upload() returned unexpected value: ${JSON.stringify(uploadUrl)}`);
       }
-      logger.info('AssemblyAI: Upload completed successfully.', { uploadUrl });
+      logger.info('AssemblyAI: Upload completed successfully.', { uploadHost: safeHost(uploadUrl) });
       return uploadUrl;
     } catch (err) {
       logger.error('AssemblyAI: Buffer upload failed', { error: err.message, stack: err.stack });
@@ -61,7 +68,7 @@ class AssemblyAiProvider extends BaseTranscriptionProvider {
     }
 
     logger.info('AssemblyAI: Submitting transcription request...', {
-      audioUrl: audioUrl.startsWith('data:') ? 'data:...' : audioUrl,
+      audioHost: safeHost(audioUrl),
       language,
       speechModels: requestConfig.speech_models,
     });
@@ -71,7 +78,7 @@ class AssemblyAiProvider extends BaseTranscriptionProvider {
       logger.info('AssemblyAI: Transcription request submitted successfully.', { transcriptId: submitted.id });
       return submitted.id;
     } catch (err) {
-      logger.error('AssemblyAI: Ingestion submission failed', { error: err.message, payload: requestConfig });
+      logger.error('AssemblyAI: Ingestion submission failed', { error: err.message, audioHost: safeHost(audioUrl), speechModels: requestConfig.speech_models, language });
       
       // Failure categorization
       if (err.message.includes('deprecated') || err.message.includes('Use "speech_models" instead')) {

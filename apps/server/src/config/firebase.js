@@ -37,13 +37,7 @@ class FirebaseConfig {
         .replace('-----END PRIVATE KEY-----', '\n-----END PRIVATE KEY-----');
     }
 
-    // 4. Trace the normalized key preview
-    console.log(
-      'Normalized Firebase key preview:',
-      privateKey?.slice(0, 80)
-    );
-
-    // 5. Strict validation
+    // 4. Strict validation (never log any part of the key)
     if (!privateKey.includes('\n')) {
       throw new Error(
         'Firebase PEM normalization failed — missing multiline formatting'
@@ -85,11 +79,8 @@ class FirebaseConfig {
       return admin.app();
     }
 
-    console.log("Firebase project:", process.env.FIREBASE_PROJECT_ID);
-    console.log("Firebase email exists:", !!process.env.FIREBASE_CLIENT_EMAIL);
-    console.log("Private key prefix:", process.env.FIREBASE_PRIVATE_KEY?.slice(0, 40));
-
     const serviceAccount = this.parseServiceAccount();
+    logger.info('Initializing Firebase Admin', { projectId: serviceAccount.project_id || 'unknown' });
     const appConfig = {
       credential: admin.credential.cert(serviceAccount),
     };

@@ -9,9 +9,10 @@ import { runStartupHealthChecks } from './src/config/startupHealthCheck.js';
 const runWorkers = process.env.RUN_WORKERS !== 'false';
 const runApi = process.env.RUN_API !== 'false';
 
+let ingestionWorker = null;
 if (runWorkers) {
   logger.info('Initializing background queue workers...');
-  await import('./src/worker/ingestion.worker.js');
+  ({ ingestionWorker } = await import('./src/worker/ingestion.worker.js'));
   logger.info('Background queue workers initialized successfully.');
 }
 
@@ -27,13 +28,15 @@ process.on('unhandledRejection', (reason) => {
 
 initializeFirebase();
 
+let server = null;
+
 if (runApi) {
   runStartupHealthChecks().catch((err) => {
     logger.error('[STARTUP HEALTH CHECK] Uncaught exception during checks. Refusing READY state.', { error: err.message });
     process.exit(1);
   });
 
-  const server = app.listen(config.port, () => {
+  server = app.listen(config.port, () => {
     logger.info(`SheryAI Backend running on port ${config.port}`);
     logger.info(`Environment: ${config.nodeEnv}`);
     logger.info(`Health check: http://localhost:${config.port}/api/health`);
@@ -51,3 +54,37 @@ if (runApi) {
   logger.info('SheryAI running in Worker-Only mode (Express server disabled).');
 }
 
+// Graceful shutdown: hosts send SIGTERM on redeploy. Stop taking requests, let an in-flight
+// lesson ingestion job finish (BullMQ worker.close waits for it), then exit.
+const SHUTDOWN_TIMEOUT_MS = Number(process.env.SHUTDOWN_TIMEOUT_MS || 25000);
+let shuttingDown = false;
+
+async function shutdown(signal) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  logger.info(`${signal} received: shutting down gracefully...`);
+
+  const forceExit = setTimeout(() => {
+    logger.warn('Graceful shutdown timed out; forcing exit.');
+    process.exit(1);
+  }, SHUTDOWN_TIMEOUT_MS);
+  forceExit.unref();
+
+  try {
+    if (server) {
+      await new Promise((resolve) => server.close(resolve));
+      logger.info('HTTP server closed.');
+    }
+    if (ingestionWorker) {
+      await ingestionWorker.close();
+      logger.info('Ingestion worker closed.');
+    }
+  } catch (err) {
+    logger.error('Error during graceful shutdown', { error: err.message });
+  } finally {
+    process.exit(0);
+  }
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));

@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { apiClient, directApiClient } from '../api/httpClient';
+import { demoHeaders } from '../api/demoIdentity';
 import { API_BASE_URL, API_DIRECT_URL, buildApiUrl } from '../config/env';
 
 export const BASE_URL = API_BASE_URL;
@@ -157,7 +158,7 @@ export async function streamChat(payload, signal) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-demo-role': localStorage.getItem('demo_role') || 'student',
+      ...demoHeaders(),
     },
     body: JSON.stringify(payload),
     signal,

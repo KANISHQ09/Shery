@@ -284,9 +284,10 @@ class LessonService {
     };
   }
 
-  async deleteFailedByCourse(courseId) {
+  async deleteFailedByCourse(courseId, { onlyCreatedBy = null } = {}) {
     const failed = (await this.lessonRepository.findAllByCourseId(courseId))
-      .filter((lesson) => lesson.status === 'failed');
+      .filter((lesson) => lesson.status === 'failed')
+      .filter((lesson) => !onlyCreatedBy || lesson.createdBy === onlyCreatedBy);
 
     const results = [];
     for (const lesson of failed) {
