@@ -63,6 +63,10 @@ vi.mock('../src/config/firebase.js', () => {
 
 // Now import the app safely
 import app from '../src/app.js';
+import config from '../src/config/env.js';
+
+// Pin local storage so this test never depends on the developer's .env (or touches a real bucket)
+config.storageProvider = 'local';
 
 describe('Lesson API Integration Tests', () => {
   it('should generate a signed upload URL via request-upload-url', async () => {

@@ -6,6 +6,7 @@ import AppIcon from './AppIcon';
 import { useIngestYoutubeLessonMutation, useUploadLessonMutation } from '../api/lessonQueries';
 import { uploadLesson } from '../services/api';
 import { useLectureSummaryMutation } from '../api/chatQueries';
+import { MAX_UPLOAD_MB, MAX_UPLOAD_BYTES } from '../config/env';
 
 const fieldClass = 'w-full rounded-[10px] border border-[#2a2a2a] bg-[#111] px-3.5 py-[11px] text-sm text-white outline-none focus:border-accent-border focus:ring-4 focus:ring-accent/10';
 const labelClass = 'mb-1.5 block text-xs font-semibold text-[#666]';
@@ -98,8 +99,8 @@ export function VideoStudio({ onLessonReady }) {
   const handleFilePick = (event) => {
     const nextFile = event.target.files[0];
     if (!nextFile) return;
-    if (nextFile.size > 500 * 1024 * 1024) {
-      setErr('Max file size is 500 MB');
+    if (nextFile.size > MAX_UPLOAD_BYTES) {
+      setErr(`Max file size is ${MAX_UPLOAD_MB} MB`);
       return;
     }
     setFile(nextFile);
@@ -152,7 +153,7 @@ export function VideoStudio({ onLessonReady }) {
           {tab === 'upload' && (
             <form onSubmit={submitUpload} className="flex flex-col gap-[18px]">
               <div className="flex flex-col">
-                <span className={labelClass}>Video File * (MP4, WebM, MOV - max 500 MB)</span>
+                <span className={labelClass}>Video File * (MP4, WebM, MOV - max {MAX_UPLOAD_MB} MB)</span>
                 <div
                   role="button"
                   tabIndex={0}

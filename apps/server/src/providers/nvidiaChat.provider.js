@@ -7,6 +7,14 @@ import geminiFlash from '../config/gemini.js';
 
 const verifiedNvidiaModels = new Set();
 
+export const DEFAULT_CHAT_MODEL = 'nvidia/nemotron-3.5-lightning-30b-a3b';
+// Live fallbacks on build.nvidia.com (fast small model first, then the large one)
+const NVIDIA_FALLBACK_MODELS = ['nvidia/nemotron-3.5-bolt-e4b', 'nvidia/nemotron-3-ultra-550b-a55b'];
+const RETIRED_MODELS = new Set(['qwen/qwen3-235b-a22b', 'nvidia/nemotron-3-nano-30b-a3b', 'meta/llama-3.1-8b-instruct', 'meta/llama-3.3-70b-instruct']);
+
+// Nemotron models reason before answering by default; disabling it cuts latency ~3x for tutoring answers.
+const thinkingParams = (model) => (/nemotron/i.test(model) ? { chat_template_kwargs: { enable_thinking: false } } : {});
+
 class NvidiaChatProvider {
   constructor(options = {}) {
     this.client = null;
@@ -14,8 +22,8 @@ class NvidiaChatProvider {
   }
 
   normalizeModelName(modelName) {
-    if (modelName === 'qwen/qwen3-235b-a22b') {
-      return 'nvidia/nemotron-3-nano-30b-a3b';
+    if (RETIRED_MODELS.has(modelName)) {
+      return DEFAULT_CHAT_MODEL;
     }
     return modelName;
   }
@@ -56,7 +64,7 @@ class NvidiaChatProvider {
   status() {
     return {
       provider: 'nvidia',
-      model: config.chatModel || 'nvidia/nemotron-3-nano-30b-a3b',
+      model: config.chatModel || DEFAULT_CHAT_MODEL,
       hasApiKey: !!(config.nvidiaApiKey || process.env.NVIDIA_API_KEY),
     };
   }
@@ -93,8 +101,7 @@ class NvidiaChatProvider {
     if (this.studentTutorOnly) {
       const baseChain = [
         targetModel,
-        'meta/llama-3.1-8b-instruct',
-        'meta/llama-3.3-70b-instruct'
+        ...NVIDIA_FALLBACK_MODELS,
       ];
       // Append other verified NVIDIA models (excluding non-NVIDIA providers)
       const otherVerified = Array.from(verifiedNvidiaModels)
@@ -104,10 +111,9 @@ class NvidiaChatProvider {
     }
     
     const defaultChain = [
-      'nvidia/nemotron-3-nano-30b-a3b',
-      'meta/llama-3.1-8b-instruct',
-      'meta/llama-3.3-70b-instruct',
-      'gemini-2.5-flash'
+      DEFAULT_CHAT_MODEL,
+      ...NVIDIA_FALLBACK_MODELS,
+      'gemini-fallback' // routed to geminiFlash, which uses GEMINI_MODEL
     ];
     
     const index = defaultChain.indexOf(targetModel);
@@ -115,7 +121,7 @@ class NvidiaChatProvider {
       return defaultChain.slice(index);
     }
     
-    return [targetModel, ...defaultChain].filter(m => m !== 'qwen/qwen3-235b-a22b');
+    return Array.from(new Set([targetModel, ...defaultChain]));
   }
 
   async generate(promptOrObject) {
@@ -130,7 +136,7 @@ class NvidiaChatProvider {
     const temperature = promptOrObject?.generationConfig?.temperature ?? 0.3;
     const maxTokens = promptOrObject?.generationConfig?.maxOutputTokens ?? 4096;
 
-    const requestedModel = config.chatModel || 'nvidia/nemotron-3-nano-30b-a3b';
+    const requestedModel = config.chatModel || DEFAULT_CHAT_MODEL;
     const chain = this.getFallbackChain(requestedModel);
 
     const diagnostics = {
@@ -185,6 +191,7 @@ class NvidiaChatProvider {
               messages,
               temperature,
               max_tokens: maxTokens,
+              ...thinkingParams(model),
               response_format: promptOrObject?.generationConfig?.responseMimeType === 'application/json' 
                 ? { type: 'json_object' } 
                 : undefined
@@ -226,7 +233,7 @@ class NvidiaChatProvider {
     const temperature = opts.generationConfig?.temperature ?? 0.35;
     const maxTokens = opts.generationConfig?.maxOutputTokens ?? 1500;
 
-    const requestedModel = config.chatModel || 'nvidia/nemotron-3-nano-30b-a3b';
+    const requestedModel = config.chatModel || DEFAULT_CHAT_MODEL;
     const chain = this.getFallbackChain(requestedModel);
 
     const diagnostics = {
@@ -280,6 +287,7 @@ class NvidiaChatProvider {
                 temperature,
                 max_tokens: maxTokens,
                 stream: true,
+                ...thinkingParams(model),
               }, {
                 signal: opts.signal,
               });

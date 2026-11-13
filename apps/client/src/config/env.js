@@ -26,3 +26,8 @@ export function buildApiUrl(path, baseUrl = API_BASE_URL) {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   return `${baseUrl}${normalizedPath}`;
 }
+
+// Largest video an instructor may upload. Keep in line with the storage provider's per-file limit
+// (Supabase free plan: ~50 MB) and the server's MAX_VIDEO_UPLOAD_MB.
+export const MAX_UPLOAD_MB = Number(import.meta.env.VITE_MAX_UPLOAD_MB) || 50;
+export const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;

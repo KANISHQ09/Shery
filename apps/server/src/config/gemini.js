@@ -4,13 +4,15 @@ import { getNvidiaClient, getNvidiaModel } from './nvidia.js';
 import { wrapCall, wrapStreamCall } from '../utils/aiReliabilityWrapper.js';
 import logger from '../loggers/logger.js';
 
+// Used when GEMINI_MODEL is not in the verified list (e.g. retired). Must be on the free tier.
+const FALLBACK_GEMINI_MODEL = 'gemini-3.5-flash-lite';
+
 // Cache/set of verified model names. Initialized with known defaults.
 export let verifiedModels = new Set([
-  'gemini-2.5-flash-lite',
-  'gemini-2.5-flash',
-  'gemini-2.5-pro',
-  'gemini-2.0-flash',
-  'gemini-3.5-flash'
+  'gemini-3.5-flash-lite',
+  'gemini-3.1-flash-lite',
+  'gemini-3.5-flash',
+  'gemini-flash-lite-latest',
 ]);
 
 export function updateVerifiedModels(modelsList) {
@@ -38,13 +40,23 @@ class GeminiCompatibleAiClient {
     return getNvidiaModel();
   }
 
+  // Extra request params when running on NVIDIA (no Gemini key): skip Nemotron "thinking" for speed.
+  providerParams(model) {
+    if (config.geminiApiKey) return {};
+    return /nemotron/i.test(model) ? { chat_template_kwargs: { enable_thinking: false } } : {};
+  }
+
   validateModel(modelName) {
+    // The verified list only knows Gemini models; when falling back to NVIDIA, use its model as-is.
+    if (!config.geminiApiKey) {
+      return modelName;
+    }
     const cleanName = String(modelName || '').replace(/^models\//, '');
     if (verifiedModels.has(cleanName) || verifiedModels.has(modelName)) {
       return modelName;
     }
-    logger.warn(`[HARDENING] Model "${modelName}" is unverified or unavailable. Falling back to gemini-2.5-flash-lite`);
-    return 'gemini-2.5-flash-lite';
+    logger.warn(`[HARDENING] Model "${modelName}" is unverified or unavailable. Falling back to ${FALLBACK_GEMINI_MODEL}`);
+    return FALLBACK_GEMINI_MODEL;
   }
 
   toMessages(promptOrObject) {
@@ -85,6 +97,7 @@ class GeminiCompatibleAiClient {
       messages,
       temperature: promptOrObject?.generationConfig?.temperature ?? 0.3,
       max_tokens: promptOrObject?.generationConfig?.maxOutputTokens ?? 4096,
+      ...this.providerParams(model),
     };
 
     if (promptOrObject?.generationConfig?.responseMimeType === 'application/json') {
@@ -110,6 +123,7 @@ class GeminiCompatibleAiClient {
         temperature: opts.generationConfig?.temperature ?? 0.35,
         max_tokens: opts.generationConfig?.maxOutputTokens ?? 1500,
         stream: true,
+        ...this.providerParams(model),
       }, {
         signal: opts.signal,
       });

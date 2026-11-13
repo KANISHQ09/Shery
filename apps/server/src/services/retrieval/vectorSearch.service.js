@@ -3,11 +3,10 @@ import AppError from '../../utils/AppError.js';
 import { WORKSPACE_COLLECTION } from '../../infrastructure/qdrant.js';
 
 class VectorSearchService {
-  constructor({ embeddingService, qdrantClient, aiClient, hotWorkspaceCacheService } = {}) {
+  constructor({ embeddingService, qdrantClient, aiClient } = {}) {
     this.embeddingService = embeddingService;
     this.qdrantClient = qdrantClient;
     this.aiClient = aiClient; // geminiFlash
-    this.hotWorkspaceCacheService = hotWorkspaceCacheService;
   }
 
   /**
@@ -139,124 +138,6 @@ Original Query: "${query}"`;
             }
           }
         }
-      } else {
-        const { default: container } = await import('../../container/workspaceContainer.js');
-        const sources = await container.workspaceSourceRepository.findByWorkspace(workspaceId);
-        
-        const activeStatuses = ['ready', 'completed', 'partially_ready', 'transcript_ready', 'vector_ready', 'graph_ready', 'ready_without_vectors', 'indexing_pending', 'indexing_retrying', 'fully_indexed'];
-        const activeSources = sources.filter(s => 
-          activeStatuses.includes(s.status) && 
-          (!opts.sourceIds || opts.sourceIds.includes(s.id))
-        );
-
-        for (const src of activeSources) {
-          const transcriptText = src.transcript || `Source: ${src.title || 'Untitled Source'} - No transcript available.`;
-          const title = src.title || '';
-          const titleLower = title.toLowerCase();
-          
-          let titleMatchBoost = 1.0;
-          for (const term of queryTerms) {
-            if (titleLower.includes(term)) {
-              titleMatchBoost += 0.25;
-            }
-          }
-
-          // Segment dynamic paragraph blocks (approx 800 chars, 150 overlap)
-          const maxLen = 800;
-          const overlap = 150;
-          const paragraphs = transcriptText.split(/\n+/).map(p => p.trim()).filter(p => p.length > 10);
-          
-          let chunkIndex = 0;
-          const textChunks = [];
-          for (const p of paragraphs) {
-            let start = 0;
-            while (start < p.length) {
-              const text = p.substring(start, start + maxLen);
-              textChunks.push({
-                text,
-                chunkIndex: chunkIndex++,
-                sectionTitle: 'Transcript Segment'
-              });
-              start += maxLen - overlap;
-            }
-          }
-
-          // Score blocks
-          for (const chunk of textChunks) {
-            const textLower = chunk.text.toLowerCase();
-            let score = 0;
-            let termsMatched = 0;
-
-            if (textLower.includes(query.toLowerCase())) {
-              score += 10;
-            }
-
-            for (const term of queryTerms) {
-              if (textLower.includes(term)) {
-                termsMatched++;
-                const count = textLower.split(term).length - 1;
-                score += count * 1.5;
-
-                if (termsMatched > 1) {
-                  score += 2.0;
-                }
-              }
-            }
-
-            if (score > 0) {
-              let finalScore = score * titleMatchBoost;
-
-              // Layer 4: Section-title heuristic matching
-              if (src.topicSegments) {
-                const matchedTopic = src.topicSegments.find(
-                  t => chunk.chunkIndex >= t.startChunkIndex && chunk.chunkIndex <= t.endChunkIndex
-                );
-                if (matchedTopic) {
-                  const topicTitleLower = (matchedTopic.title || '').toLowerCase();
-                  for (const term of queryTerms) {
-                    if (topicTitleLower.includes(term)) {
-                      finalScore += 4.0; // Boost if search query term matches topic/section title
-                    }
-                  }
-
-                  for (const keyword of (matchedTopic.keywords || [])) {
-                    if (query.toLowerCase().includes(keyword.toLowerCase())) {
-                      finalScore += 3.0;
-                    }
-                  }
-                }
-              }
-
-              // Layer 5: Recent-source prioritization
-              let recencyBoost = 0;
-              if (src.updatedAt) {
-                const hoursSinceUpdate = (Date.now() - new Date(src.updatedAt).getTime()) / (1000 * 60 * 60);
-                if (hoursSinceUpdate < 1) {
-                  recencyBoost = 3.0;
-                } else if (hoursSinceUpdate < 24) {
-                  recencyBoost = 1.5;
-                } else if (hoursSinceUpdate < 168) {
-                  recencyBoost = 0.5;
-                }
-              }
-              finalScore += recencyBoost;
-
-              candidates.push({
-                text: chunk.text,
-                sourceId: src.id,
-                sourceTitle: title,
-                sourceType: src.type,
-                chunkIndex: chunk.chunkIndex,
-                startTime: null,
-                endTime: null,
-                pageNumber: null,
-                sectionTitle: chunk.sectionTitle,
-                relevance: finalScore,
-                semanticScore: finalScore
-              });
-            }
-          }
-        }
       }
 
       candidates.sort((a, b) => b.relevance - a.relevance);
@@ -293,27 +174,13 @@ Original Query: "${query}"`;
    */
   async hybridSearch(workspaceId, query, opts = {}) {
     const startMs = Date.now();
-    let topK = opts.topK || this.adaptiveRetrievalDepth(query);
-    if (opts.assetType === 'interview_questions') {
-      if (!opts.topK) {
-        topK = 15;
-      }
-      logger.info('[Studio Search] Broader semantic search active for interview questions asset', { query, topK });
-    }
+    const topK = opts.topK || this.adaptiveRetrievalDepth(query);
 
     if (!query || typeof query !== 'string') {
       throw new AppError('Search query is required', 400);
     }
 
     try {
-      // LEVEL 0: Hot Workspace Cache Check
-      if (this.hotWorkspaceCacheService) {
-        const cached = await this.hotWorkspaceCacheService.searchCache(workspaceId, query, topK);
-        if (cached && cached.length > 0) {
-          return cached;
-        }
-      }
-
       // AI Semantic query expansion
       const expandedQuery = opts.skipQueryExpansion
         ? query
@@ -424,115 +291,8 @@ Original Query: "${query}"`;
   async runLayeredFallbacks(workspaceId, query, topK, opts = {}) {
     logger.info('Executing Layered Ingestion Fallbacks...', { workspaceId, query });
 
-    // LEVEL 2: BM25 Lexical
-    const lexicalHits = await this.lexicalSearch(workspaceId, query, opts);
-    if (lexicalHits && lexicalHits.length > 0) return lexicalHits;
-
-    // LEVEL 3: Title/Topic keyword matching
-    const keywordHits = await this.titleTopicMatching(workspaceId, query, topK);
-    if (keywordHits && keywordHits.length > 0) return keywordHits;
-
-    // LEVEL 4: Summary Memory Retrieval
-    const memoryHits = await this.memorySummaryRetrieval(workspaceId, query, topK);
-    if (memoryHits && memoryHits.length > 0) return memoryHits;
-
-    // LEVEL 5: Source Overview Fallback
-    return this.sourceOverviewFallback(workspaceId, topK);
-  }
-
-  async titleTopicMatching(workspaceId, query, topK) {
-    try {
-      const { default: container } = await import('../../container/workspaceContainer.js');
-      const sources = await container.workspaceSourceRepository.findByWorkspace(workspaceId);
-      const queryLower = query.toLowerCase();
-      
-      const matched = [];
-      for (const src of sources) {
-        const title = (src.title || '').toLowerCase();
-        if (title.includes(queryLower) || queryLower.includes(title)) {
-          if (src.transcript) {
-            matched.push({
-              text: `Source Match: ${src.title}.\nTranscript Overview:\n${src.transcript.substring(0, 1000)}...`,
-              sourceId: src.id,
-              sourceTitle: src.title,
-              sourceType: src.type,
-              chunkIndex: 0,
-              startTime: null,
-              endTime: null,
-              pageNumber: 1,
-              sectionTitle: 'Keyword Overview',
-              relevance: 0.9,
-              semanticScore: 0.9
-            });
-          }
-        }
-      }
-      return matched.slice(0, topK);
-    } catch (err) {
-      logger.warn('Title topic matching failed', { error: err.message });
-      return [];
-    }
-  }
-
-  async memorySummaryRetrieval(workspaceId, query, topK) {
-    try {
-      const { default: container } = await import('../../container/workspaceContainer.js');
-      const memory = await container.workspaceMemoryService.getMemoryContext(workspaceId);
-      if (!memory) return [];
-
-      const queryLower = query.toLowerCase();
-      const matches = [];
-      const focusAreas = memory.focusAreas || [];
-      
-      for (const area of focusAreas) {
-        if (queryLower.includes(area.toLowerCase())) {
-          matches.push({
-            text: `Workspace focus area: ${area}. The user has focused on this topic previously in study patterns.`,
-            sourceId: 'workspace_memory',
-            sourceTitle: 'Workspace Cognitive Memory',
-            sourceType: 'memory',
-            chunkIndex: 0,
-            startTime: null,
-            endTime: null,
-            pageNumber: null,
-            sectionTitle: 'Memory Context',
-            relevance: 0.8,
-            semanticScore: 0.8
-          });
-        }
-      }
-      return matches.slice(0, topK);
-    } catch (err) {
-      logger.warn('Memory summary retrieval failed', { error: err.message });
-      return [];
-    }
-  }
-
-  async sourceOverviewFallback(workspaceId, topK) {
-    try {
-      const { default: container } = await import('../../container/workspaceContainer.js');
-      const sources = await container.workspaceSourceRepository.findByWorkspace(workspaceId);
-      const text = `Workspace Sources Overview:\n` + 
-        sources.map(s => `- ${s.title} (${s.type}, status: ${s.status})`).join('\n') + 
-        `\nThis workspace contains ${sources.length} sources. Ask me a specific question about these files!`;
-      
-      return [{
-        text,
-        sourceId: 'workspace_overview',
-        sourceTitle: 'Workspace Overview',
-        sourceType: 'overview',
-        chunkIndex: 0,
-        startTime: null,
-        endTime: null,
-        pageNumber: null,
-        sectionTitle: 'Workspace Overview',
-        relevance: 0.7,
-        semanticScore: 0.7
-      }];
-    } catch (err) {
-      logger.warn('Source overview fallback failed', { error: err.message });
-      return [];
-    }
+    // LEVEL 2: BM25 Lexical over cached lesson transcript chunks
+    return this.lexicalSearch(workspaceId, query, { ...opts, topK });
   }
 
   /**

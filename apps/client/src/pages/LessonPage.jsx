@@ -213,7 +213,9 @@ export default function LessonPage() {
       youtubePlayerRef.current?.destroy?.();
       youtubePlayerRef.current = null;
     };
-  }, [lesson?.youtubeVideoId, lessonId]);
+    // `loading` matters: while it is true the player <div> is not mounted (playerRef is null),
+    // so the effect must re-run once the page finishes loading.
+  }, [lesson?.youtubeVideoId, lessonId, loading]);
 
   const seekTo = useCallback(
     (seconds) => {

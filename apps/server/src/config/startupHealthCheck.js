@@ -11,8 +11,7 @@ export async function runStartupHealthChecks() {
   // Set health check statuses
   providerHealthStatus.chatProvider = config.chatProvider;
   providerHealthStatus.chatModel = config.chatModel;
-  providerHealthStatus.presentationModel = config.presentationModel;
-  providerHealthStatus.audioModel = config.audioModel;
+  providerHealthStatus.geminiModel = config.geminiModel;
 
   let providerStatus = 'healthy';
   let quotaStatus = 'active';
@@ -37,7 +36,7 @@ export async function runStartupHealthChecks() {
   // Step 2: Verify Embedding Model
   logger.info('[STARTUP HEALTH CHECK] Verifying Embedding model...');
   try {
-    const { default: container } = await import('../container/workspaceContainer.js');
+    const { default: container } = await import('../container.js');
     const testEmbedding = await container.embeddingService.providerRegistry.generateEmbeddings(['healthcheck']);
     if (!testEmbedding || testEmbedding.length === 0) {
       throw new Error('Embedding model check returned empty vectors');
@@ -55,14 +54,11 @@ export async function runStartupHealthChecks() {
     }
   }
 
-  // Step 3: Verify Gemini API (using PRESENTATION_MODEL and AUDIO_MODEL)
+  // Step 3: Verify Gemini API (optional — geminiFlash falls back to NVIDIA when no key is set)
   const geminiApiKey = config.geminiApiKey;
   if (!geminiApiKey) {
-    logger.error('[STARTUP HEALTH CHECK] GEMINI_API_KEY is missing from environment. Refusing READY state.');
-    providerHealthStatus.providerStatus = 'unhealthy';
-    throw new Error('GEMINI_API_KEY is missing from environment.');
-  }
-
+    logger.warn('[STARTUP HEALTH CHECK] GEMINI_API_KEY not set. Lesson metadata and query rewriting will use NVIDIA.');
+  } else {
   logger.info('[STARTUP HEALTH CHECK] Verifying Gemini model connectivity...');
   // Fetch verified models list
   try {
@@ -78,10 +74,8 @@ export async function runStartupHealthChecks() {
     logger.warn('[STARTUP HEALTH CHECK] Failed to fetch verified models list from Gemini API (non-fatal)', { error: err.message });
   }
 
-  // Test Presentation/Audio models
   const geminiModelsToTest = [
-    { name: 'PRESENTATION_MODEL', value: config.presentationModel },
-    { name: 'AUDIO_MODEL', value: config.audioModel }
+    { name: 'GEMINI_MODEL', value: config.geminiModel },
   ];
 
   const geminiClient = geminiFlash.getClient();
@@ -101,6 +95,7 @@ export async function runStartupHealthChecks() {
       logger.error(`[STARTUP HEALTH CHECK] Gemini ${modelConfig.name} ("${modelConfig.value}") failed check: ${err.message}`);
     }
   }
+  }
 
   // Step 4: Verify NVIDIA API (using CHAT_MODEL)
   const nvidiaApiKey = config.nvidiaApiKey || process.env.NVIDIA_API_KEY;
@@ -110,9 +105,9 @@ export async function runStartupHealthChecks() {
   } else {
     logger.info('[STARTUP HEALTH CHECK] Verifying NVIDIA model connectivity...');
     try {
-      let chatModelToTest = config.chatModel || 'nvidia/nemotron-3-nano-30b-a3b';
+      let chatModelToTest = config.chatModel || 'nvidia/nemotron-3.5-lightning-30b-a3b';
       if (chatModelToTest === 'qwen/qwen3-235b-a22b') {
-        chatModelToTest = 'nvidia/nemotron-3-nano-30b-a3b';
+        chatModelToTest = 'nvidia/nemotron-3.5-lightning-30b-a3b';
       }
       await nvidiaChatProvider.generate({
         contents: [{ role: 'user', parts: [{ text: 'healthcheck' }] }],

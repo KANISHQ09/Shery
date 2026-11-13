@@ -15,7 +15,6 @@ const QuizPage          = lazy(() => import('./pages/QuizPage'));
 const InstructorPage    = lazy(() => import('./pages/InstructorPage'));
 const CreateCoursePage  = lazy(() => import('./pages/CreateCoursePage'));
 const CourseManagerPage = lazy(() => import('./pages/CourseManagerPage'));
-const KnowledgeWorkspacePage = lazy(() => import('./pages/KnowledgeWorkspacePage'));
 const NotFoundPage      = lazy(() => import('./pages/NotFoundPage'));
 
 // ── Loading spinner ───────────────────────────────────────
@@ -79,9 +78,6 @@ export default function App() {
           <Route path="/instructor/create-course"    element={<RoleGuard><CreateCoursePage /></RoleGuard>} />
           <Route path="/instructor/course/:courseId" element={<RoleGuard><CourseManagerPage /></RoleGuard>} />
           
-          {/* Knowledge Workspace */}
-          <Route path="/workspace"                   element={<RoleGuard><KnowledgeWorkspacePage /></RoleGuard>} />
-          <Route path="/workspace/:workspaceId"      element={<RoleGuard><KnowledgeWorkspacePage /></RoleGuard>} />
 
           <Route path="*" element={<NotFoundPage />} />
         </Routes>

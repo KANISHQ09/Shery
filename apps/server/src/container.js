@@ -13,10 +13,28 @@ import VideoStorageService from './services/videoStorage.service.js';
 import LessonService from './services/lesson.service.js';
 import ChatService from './services/chat.service.js';
 import ingestionQueue from './infrastructure/queue.js';
-import workspaceContainer from './container/workspaceContainer.js';
+import config from './config/env.js';
+import { getQdrantClient } from './infrastructure/qdrant.js';
+import EmbeddingProviderRegistryService from './services/retrieval/embeddingProviderRegistry.service.js';
+import EmbeddingService from './services/retrieval/embedding.service.js';
+import VectorSearchService from './services/retrieval/vectorSearch.service.js';
 
 class Container {
   constructor() {
+    // Retrieval (Qdrant + NVIDIA embeddings) used by lesson ingestion and lesson chat
+    this.embeddingProviderRegistry = new EmbeddingProviderRegistryService({ config });
+    this.embeddingService = new EmbeddingService({
+      embeddingProviderRegistry: this.embeddingProviderRegistry,
+      qdrantClient: getQdrantClient(),
+      config,
+      dbProvider: getDb,
+    });
+    this.vectorSearchService = new VectorSearchService({
+      embeddingService: this.embeddingService,
+      qdrantClient: getQdrantClient(),
+      aiClient: geminiFlash,
+    });
+
     this.lessonRepository = new LessonRepository(getDb);
     this.chunkRepository = new TranscriptChunkRepository(getDb);
     this.chatSessionRepository = new ChatSessionRepository(getDb);
@@ -35,7 +53,7 @@ class Container {
       aiMetadataService: this.aiMetadataService,
       chunkCacheService: this.chunkCacheService,
       videoStorageService: this.videoStorageService,
-      embeddingService: workspaceContainer.embeddingService,
+      embeddingService: this.embeddingService,
     });
 
     this.lessonService = new LessonService({
@@ -54,7 +72,7 @@ class Container {
       chunkCacheService: this.chunkCacheService,
       chatSessionRepository: this.chatSessionRepository,
       aiClient: studentNvidiaProvider,
-      vectorSearchService: workspaceContainer.vectorSearchService,
+      vectorSearchService: this.vectorSearchService,
     });
   }
 }

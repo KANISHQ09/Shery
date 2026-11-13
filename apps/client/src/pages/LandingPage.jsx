@@ -100,7 +100,6 @@ function Brand() {
 }
 
 function Navbar({ onGetStarted }) {
-  const navigate = useNavigate();
   const isScrolled = useScrolledPast();
   const [mobileOpen, setMobileOpen] = useState(false);
   const close = useCallback(() => setMobileOpen(false), []);
@@ -128,13 +127,6 @@ function Navbar({ onGetStarted }) {
         </nav>
 
         <div className="flex items-center gap-2.5">
-          <button 
-            type="button" 
-            onClick={() => navigate('/workspace')} 
-            className="hidden rounded-xl border border-accent/20 bg-accent/5 px-4 py-2 text-sm font-bold text-accent transition hover:border-accent/40 hover:bg-accent/10 md:inline-flex"
-          >
-            Knowledge Workspace
-          </button>
           <button type="button" onClick={onGetStarted} className="hidden rounded-xl border border-white/10 px-4 py-2 text-sm font-semibold text-muted-text transition hover:border-white/20 hover:text-white md:inline-flex">
             Sign In
           </button>
@@ -162,14 +154,7 @@ function Navbar({ onGetStarted }) {
               </a>
             ))}
           </nav>
-          <button 
-            type="button" 
-            onClick={() => { close(); navigate('/workspace'); }} 
-            className="mt-5 w-full rounded-xl border border-accent/20 bg-accent/5 px-5 py-3 text-sm font-bold text-accent uppercase tracking-wider text-center"
-          >
-            Knowledge Workspace
-          </button>
-          <button type="button" onClick={() => { close(); onGetStarted(); }} className="mt-3.5 w-full rounded-xl bg-accent px-5 py-3 text-sm font-bold text-white uppercase tracking-wider">
+          <button type="button" onClick={() => { close(); onGetStarted(); }} className="mt-5 w-full rounded-xl bg-accent px-5 py-3 text-sm font-bold text-white uppercase tracking-wider">
             Get Started
           </button>
         </div>

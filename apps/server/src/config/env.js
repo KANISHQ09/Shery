@@ -26,44 +26,29 @@ class EnvConfig {
     this.supabaseServiceRoleKey = source.SUPABASE_SERVICE_ROLE_KEY || '';
     this.supabaseStorageBucket = source.SUPABASE_STORAGE_BUCKET || 'workspace-assets';
     this.supabaseSignedUrlTtlSeconds = Number(source.SUPABASE_SIGNED_URL_TTL_SECONDS || 3600);
+    // Cloudflare R2 (STORAGE_PROVIDER=r2) — S3-compatible, free egress
+    this.r2AccountId = source.R2_ACCOUNT_ID || '';
+    this.r2AccessKeyId = source.R2_ACCESS_KEY_ID || '';
+    this.r2SecretAccessKey = source.R2_SECRET_ACCESS_KEY || '';
+    this.r2Bucket = source.R2_BUCKET || '';
     this.maxVideoUploadMb = Number(source.MAX_VIDEO_UPLOAD_MB || 100);
     this.assemblyAiApiKey = source.ASSEMBLYAI_API_KEY || '';
     this.assemblyAiSpeechModels = splitCsv(source.ASSEMBLYAI_SPEECH_MODELS || 'universal-3-pro, universal-2');
     this.transcriptionProvider = source.TRANSCRIPTION_PROVIDER || 'assemblyai';
     this.nvidiaApiKey = source.NVIDIA_API_KEY || '';
-    this.nvidiaModel = source.NVIDIA_MODEL || 'nvidia/nemotron-3-nano-30b-a3b';
+    this.nvidiaModel = source.NVIDIA_MODEL || 'nvidia/nemotron-3.5-lightning-30b-a3b';
     this.allowedOrigins = splitCsv(source.CORS_ORIGINS);
-    this.falApiKey = source.FAL_KEY || source.FAL_API_KEY || '';
-    this.geminiApiKey = source.GEMINI_API_KEY || '';
-    this.openaiApiKey = source.OPENAI_API_KEY || '';
-    this.elevenlabsApiKey = source.ELEVENLABS_API_KEY || '';
-    this.defaultImageProvider = source.DEFAULT_IMAGE_PROVIDER || 'fal';
-    this.defaultAudioProvider = source.DEFAULT_AUDIO_PROVIDER || 'openai';
+    this.geminiApiKey = source.GEMINI_API_KEY || ''; // optional: lesson metadata + query rewrite; falls back to NVIDIA
+    this.geminiModel = source.GEMINI_MODEL || 'gemini-3.5-flash-lite';
     this.chatProvider = source.CHAT_PROVIDER || 'nvidia';
-    this.chatModel = source.CHAT_MODEL || 'nvidia/nemotron-3-nano-30b-a3b';
-    this.imageProvider = source.IMAGE_PROVIDER || 'gemini';
-    this.imageModel = source.IMAGE_MODEL || 'gemini-2.5-flash-image-preview';
-    this.imageModelDefault = source.IMAGE_MODEL_DEFAULT || 'flux-1-schnell';
-    this.imageModelText = source.IMAGE_MODEL_TEXT || 'qwen-image';
-    this.presentationProvider = source.PRESENTATION_PROVIDER || 'gemini';
-    this.presentationModel = source.PRESENTATION_MODEL || 'gemini-2.5-flash';
-    this.audioProvider = source.AUDIO_PROVIDER || 'gemini';
-    this.audioModel = source.AUDIO_MODEL || 'gemini-2.5-flash';
-    this.geminiModel = this.chatModel; // For backward compatibility
+    this.chatModel = source.CHAT_MODEL || 'nvidia/nemotron-3.5-lightning-30b-a3b';
 
-    // Knowledge Workspace — Qdrant vector DB
+    // Qdrant vector DB (lesson transcript retrieval)
     this.qdrantUrl = source.QDRANT_URL || 'http://127.0.0.1:6333';
     this.qdrantApiKey = source.QDRANT_API_KEY || '';
 
-    // Knowledge Workspace — NVIDIA embedding model
-    this.nvidiaEmbeddingModel = source.NVIDIA_EMBEDDING_MODEL || 'nvidia/nv-embedqa-mistral-7b-v2';
-
-    // Knowledge Workspace — limits
-    this.workspaceFreeLimit = Math.max(Number(source.WORKSPACE_FREE_LIMIT || 50), 50);
-    this.workspaceSourceLimit = Number(source.WORKSPACE_SOURCE_LIMIT || 20);
-    this.workspaceMaxPdfMb = Number(source.WORKSPACE_MAX_PDF_MB || 20);
-    this.workspaceChunkSizeTokens = Number(source.WORKSPACE_CHUNK_SIZE_TOKENS || 384);
-    this.workspaceChunkOverlapTokens = Number(source.WORKSPACE_CHUNK_OVERLAP_TOKENS || 48);
+    // NVIDIA embedding model
+    this.nvidiaEmbeddingModel = source.NVIDIA_EMBEDDING_MODEL || 'nvidia/nemotron-3.5-embed-8b';
 
     if (this.frontendUrl && !this.allowedOrigins.includes(this.frontendUrl)) {
       this.allowedOrigins.push(this.frontendUrl);
@@ -84,9 +69,6 @@ class EnvConfig {
     // Startup validation for required variables (except during testing)
     if (this.nodeEnv !== 'test' && !process.env.VITEST) {
       const missingVars = [];
-      if (!this.geminiApiKey) {
-        missingVars.push('GEMINI_API_KEY');
-      }
       if (!this.nvidiaApiKey) {
         missingVars.push('NVIDIA_API_KEY');
       }

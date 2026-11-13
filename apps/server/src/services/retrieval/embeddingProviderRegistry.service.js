@@ -6,14 +6,10 @@ class EmbeddingProviderRegistryService {
   constructor({ config }) {
     this.config = config;
     
-    // Fallback NVIDIA models to try if the primary model returns 404/500
-    this.nvidiaModelFallbackChain = [
-      this.config.nvidiaEmbeddingModel, // Primary (e.g. nvidia/nv-embedqa-mistral-7b-v2)
-      'nvidia/llama-nemotron-embed-1b-v2',
-      'nvidia/nv-embed-v1',
-      'nvidia/nv-embedcode-7b-v1',
-      'nvidia/llama-3.2-nv-embedqa-1b-v2'
-    ];
+    // Only the configured model: vectors from different embedding models are not comparable,
+    // so silently falling back to another model would corrupt search over already-indexed lessons.
+    // If you change NVIDIA_EMBEDDING_MODEL, re-index existing lessons.
+    this.nvidiaModelFallbackChain = [this.config.nvidiaEmbeddingModel];
 
     this.openaiModels = [
       'text-embedding-3-small',

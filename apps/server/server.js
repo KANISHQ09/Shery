@@ -12,8 +12,6 @@ const runApi = process.env.RUN_API !== 'false';
 if (runWorkers) {
   logger.info('Initializing background queue workers...');
   await import('./src/worker/ingestion.worker.js');
-  await import('./src/worker/workspace.worker.js');
-  await import('./src/worker/workspaceUpload.worker.js');
   logger.info('Background queue workers initialized successfully.');
 }
 

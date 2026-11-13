@@ -15,6 +15,7 @@ import { useLessonStatus } from '../hooks/useLessonStatus';
 import LessonStatusBadge from '../components/LessonStatusBadge';
 import Navbar from '../components/Navbar';
 import AppIcon from '../components/AppIcon';
+import { MAX_UPLOAD_MB, MAX_UPLOAD_BYTES } from '../config/env';
 
 const fieldClass =
   'w-full rounded-[10px] border border-line bg-surface-input px-3.5 py-[11px] text-sm text-white outline-none transition placeholder:text-muted focus:border-accent-border focus:ring-4 focus:ring-accent/10';
@@ -227,8 +228,8 @@ export default function CourseManagerPage() {
   const handleFileChange = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    if (file.size > 500 * 1024 * 1024) {
-      toast.error('Max upload size is 500 MB');
+    if (file.size > MAX_UPLOAD_BYTES) {
+      toast.error(`Max upload size is ${MAX_UPLOAD_MB} MB`);
       return;
     }
     setSelectedFile(file);
@@ -457,7 +458,7 @@ export default function CourseManagerPage() {
                 <p className="mt-1 text-xs leading-5 text-muted">Sends media to the backend upload endpoint with browser seeking support after processing.</p>
               </div>
               <span className="rounded-full border border-accent-border bg-accent-soft px-3 py-1 text-xs font-bold text-accent">
-                <AppIcon name="upload" size={13} /> 500 MB
+                <AppIcon name="upload" size={13} /> {MAX_UPLOAD_MB} MB
               </span>
             </div>
             <div className="grid gap-4">

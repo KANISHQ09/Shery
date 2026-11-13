@@ -12,15 +12,11 @@ class EmbeddingService {
     qdrantClient, 
     config, 
     dbProvider,
-    workspaceSourceRepository,
-    workspaceIngestionStateMachine
   } = {}) {
     this.providerRegistry = embeddingProviderRegistry;
     this.qdrantClient = qdrantClient;
     this.config = config;
     this.dbProvider = dbProvider;
-    this.sourceRepo = workspaceSourceRepository;
-    this.stateMachine = workspaceIngestionStateMachine;
   }
 
   _computeSha256(text) {
@@ -329,28 +325,6 @@ class EmbeddingService {
         totalStoredSoFar: indexedCount,
         totalChunks,
       });
-      
-      // Update progress in state machine
-      if (this.stateMachine) {
-        const progressPct = Math.min(80 + Math.round((indexedCount / totalChunks) * 16), 96);
-        const activeTier = batch[0].priorityTier || 3;
-        await this.stateMachine.transitionTo(
-          workspaceId,
-          sourceId,
-          'indexing',
-          progressPct,
-          `Vector indexing active (Priority Tier ${activeTier}) ... [${indexedCount}/${totalChunks} chunks]`,
-          {
-            indexingStatus: {
-              extraction: 'completed',
-              chunking: 'completed',
-              embedding: 'completed',
-              vectorIndexing: 'indexing',
-              retrievalReadinessScore: Math.min(60 + Math.round((indexedCount / totalChunks) * 35), 95),
-            }
-          }
-        );
-      }
 
       logger.info('Qdrant progressive batch indexed successfully', {
         workspaceId,

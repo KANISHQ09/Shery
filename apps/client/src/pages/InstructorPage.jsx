@@ -7,6 +7,7 @@ import { useLessonStatus } from '../hooks/useLessonStatus';
 import LessonStatusBadge from '../components/LessonStatusBadge';
 import Navbar from '../components/Navbar';
 import AppIcon from '../components/AppIcon';
+import { MAX_UPLOAD_MB, MAX_UPLOAD_BYTES } from '../config/env';
 
 const DEFAULT_COURSE_ID = 'demo-course-001';
 
@@ -90,8 +91,8 @@ export default function InstructorPage() {
   const handleFileChange = (event) => {
     const file = event.target.files[0];
     if (!file) return;
-    if (file.size > 500 * 1024 * 1024) {
-      toast.error('Max 500MB');
+    if (file.size > MAX_UPLOAD_BYTES) {
+      toast.error(`Max ${MAX_UPLOAD_MB} MB`);
       return;
     }
     setSelectedFile(file);
@@ -184,7 +185,7 @@ export default function InstructorPage() {
             {activeTab === 'upload' && (
               <form onSubmit={handleUploadSubmit} className="flex flex-col gap-4">
                 <div className="flex flex-col">
-                  <span className={labelClass}>Video File * (MP4, WebM, MOV - max 500MB)</span>
+                  <span className={labelClass}>Video File * (MP4, WebM, MOV - max {MAX_UPLOAD_MB} MB)</span>
                   <input ref={fileInputRef} type="file" accept="video/*,audio/*" className="hidden" onChange={handleFileChange} />
                   <div
                     role="button"

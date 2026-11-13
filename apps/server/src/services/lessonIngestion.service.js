@@ -177,10 +177,10 @@ class LessonIngestionService {
 
       let mediaUrl;
 
-      if (lesson.storagePath?.startsWith('supabase:')) {
-        // Supabase mode: Generate a signed read URL for AssemblyAI
+      if (this.videoStorageService.isCloudStoragePath(lesson.storagePath)) {
+        // Cloud mode (Supabase or R2): generate a signed read URL for AssemblyAI
         const signedUrl = await this.videoStorageService.getSignedVideoUrl(lesson.storagePath);
-        if (!signedUrl) throw new Error('Could not generate Supabase signed read URL for transcribing.');
+        if (!signedUrl) throw new Error('Could not generate a signed cloud read URL for transcribing.');
         mediaUrl = signedUrl;
       } else {
         // Local dev mode: Read the file from local disk and upload to AssemblyAI

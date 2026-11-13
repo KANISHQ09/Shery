@@ -302,7 +302,7 @@ class LessonService {
   async getVideo(lessonId, options = {}) {
     const lesson = await this.getById(lessonId);
 
-    if (lesson.storagePath?.startsWith('supabase:')) {
+    if (this.videoStorageService.isCloudStoragePath(lesson.storagePath)) {
       const signedUrl = await this.videoStorageService.getSignedVideoUrl(lesson.storagePath);
       if (signedUrl) return { type: 'redirect', url: signedUrl };
       if (!lesson.videoUrl) throw new AppError('Video file not found in cloud storage.', 404);
@@ -329,7 +329,7 @@ class LessonService {
   async getPlaybackUrl(lessonId) {
     const lesson = await this.getById(lessonId);
 
-    if (lesson.storagePath?.startsWith('supabase:')) {
+    if (this.videoStorageService.isCloudStoragePath(lesson.storagePath)) {
       const signedUrl = await this.videoStorageService.getSignedVideoUrl(lesson.storagePath);
       if (!signedUrl) throw new AppError('Video file not found in cloud storage.', 404);
 

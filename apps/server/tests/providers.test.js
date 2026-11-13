@@ -1,7 +1,6 @@
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import config from '../src/config/env.js';
 import { nvidiaChatProvider } from '../src/providers/nvidiaChat.provider.js';
-import { geminiImageProvider } from '../src/providers/geminiImage.provider.js';
 import { runStartupHealthChecks } from '../src/config/startupHealthCheck.js';
 import { withExponentialBackoff } from '../src/utils/aiReliabilityWrapper.js';
 
@@ -12,7 +11,7 @@ vi.mock('../src/infrastructure/qdrant.js', () => ({
 }));
 
 // Mock DI Container
-vi.mock('../src/container/workspaceContainer.js', () => ({
+vi.mock('../src/container.js', () => ({
   default: {
     embeddingService: {
       providerRegistry: {
@@ -42,12 +41,12 @@ describe('AI Providers & Reliability Refactor', () => {
       let callCount = 0;
       const mockCompletionsCreate = vi.fn().mockImplementation((options) => {
         callCount++;
-        if (options.model === 'nvidia/nemotron-3-nano-30b-a3b') {
+        if (options.model === 'nvidia/nemotron-3.5-lightning-30b-a3b') {
           throw new Error('API Rate Limit or Quota Exceeded on Nemotron');
         }
-        if (options.model === 'meta/llama-3.1-8b-instruct') {
+        if (options.model === 'nvidia/nemotron-3.5-bolt-e4b') {
           return Promise.resolve({
-            choices: [{ message: { content: 'Response from Llama 3.1 8B' } }]
+            choices: [{ message: { content: 'Response from Bolt' } }]
           });
         }
         return Promise.reject(new Error('Should not reach final fallback'));
@@ -58,20 +57,20 @@ describe('AI Providers & Reliability Refactor', () => {
       });
 
       const res = await nvidiaChatProvider.generate('Hello world');
-      expect(callCount).toBe(2); // Attempted Nemotron, then Llama 8B
-      expect(res.response.text()).toBe('Response from Llama 3.1 8B');
+      expect(callCount).toBe(2); // Lightning, then Bolt
+      expect(res.response.text()).toBe('Response from Bolt');
     });
 
     it('should complete with final fallback model if both primary and secondary fail', async () => {
       let callCount = 0;
       const mockCompletionsCreate = vi.fn().mockImplementation((options) => {
         callCount++;
-        if (options.model === 'nvidia/nemotron-3-nano-30b-a3b' || options.model === 'meta/llama-3.1-8b-instruct') {
+        if (options.model === 'nvidia/nemotron-3.5-lightning-30b-a3b' || options.model === 'nvidia/nemotron-3.5-bolt-e4b') {
           throw new Error('Unavailable');
         }
-        if (options.model === 'meta/llama-3.3-70b-instruct') {
+        if (options.model === 'nvidia/nemotron-3-ultra-550b-a55b') {
           return Promise.resolve({
-            choices: [{ message: { content: 'Response from Llama 3.3 70B' } }]
+            choices: [{ message: { content: 'Response from Ultra' } }]
           });
         }
         return Promise.reject(new Error('Unknown model'));
@@ -82,54 +81,8 @@ describe('AI Providers & Reliability Refactor', () => {
       });
 
       const res = await nvidiaChatProvider.generate('Hello world');
-      expect(callCount).toBe(3); // Nemotron -> Llama 8B -> Llama 70B
-      expect(res.response.text()).toBe('Response from Llama 3.3 70B');
-    });
-  });
-
-  describe('geminiImage.provider', () => {
-    it('should generate image using Gemini Imagen REST API on success', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({
-          predictions: [{ bytesBase64Encoded: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=' }]
-        })
-      });
-
-      const res = await geminiImageProvider.generate('a clean flowchart diagram');
-      expect(res.provider).toBe('gemini');
-      expect(res.buffer).toBeInstanceOf(Buffer);
-    });
-
-    it('should fall back to FLUX.1-Schnell if Gemini Image API fails', async () => {
-      // First fetch (Gemini) fails
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 429,
-        text: () => Promise.resolve('Quota Exceeded')
-      });
-
-      // Mock NVIDIA client for imageProvider fallback
-      const mockImagesGenerate = vi.fn().mockResolvedValue({
-        data: [{ url: 'http://nvidia.com/temp-image.png' }]
-      });
-      const mockImageProviderClient = {
-        images: { generate: mockImagesGenerate }
-      };
-      
-      const { imageProvider } = await import('../src/providers/image.provider.js');
-      imageProvider.getClient = () => mockImageProviderClient;
-      
-      // Secondary fetch (NVIDIA temp CDN download) succeeds
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        arrayBuffer: () => Promise.resolve(new ArrayBuffer(10))
-      });
-
-      const res = await geminiImageProvider.generate('a clean flowchart diagram');
-      expect(res.provider).toBe('nvidia');
-      expect(res.model).toContain('flux-1-schnell');
-      expect(res.buffer).toBeInstanceOf(Buffer);
+      expect(callCount).toBe(3); // Lightning -> Bolt -> Ultra
+      expect(res.response.text()).toBe('Response from Ultra');
     });
   });
 
@@ -154,7 +107,7 @@ describe('AI Providers & Reliability Refactor', () => {
     it('should run successfully under normal healthy conditions', async () => {
       mockFetch.mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ models: [{ name: 'models/gemini-2.5-flash' }] })
+        json: () => Promise.resolve({ models: [{ name: 'models/gemini-3.5-flash-lite' }] })
       });
 
       // Mock Gemini & NVIDIA Clients completion creation
